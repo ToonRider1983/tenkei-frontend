@@ -1,13 +1,10 @@
-import Navbar from "./components/Navbar";
-import Login from "./pages/Login";
+import Route from "../src/router/Route";
 
 function App() {
   return (
     <div>
-      <Navbar />
-      <Login />
+      <Route />
     </div>
   );
 }
-
 export default App;
