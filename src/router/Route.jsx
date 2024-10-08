@@ -1,13 +1,13 @@
 import { createBrowserRouter } from "react-router-dom";
 import { RouterProvider } from "react-router-dom";
-import Login from "../pages/Login";
+import LoginPage from "../pages/LoginPage";
 import { OrderListPage } from "../pages/OrderListPage";
 import CostInfoPage from "../pages/CostInfoPage";
 
 const router = createBrowserRouter([
     {
         path: "/",
-        element: <Login />,
+        element: <LoginPage />,
     },
     {
         path:"/order-list",
