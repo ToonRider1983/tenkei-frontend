@@ -18,7 +18,7 @@ const Login = () => {
       setError("login success");
 
       // Navigate to dashboard on successful login
-      navigate("/"); 
+      navigate("/dashboard"); 
     } catch (err) {
       setError("Invalid username or password");
     }

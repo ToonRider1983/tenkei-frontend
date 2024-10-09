@@ -1,3 +1,4 @@
+/*
 import { useState } from 'react';
 
 const Navbar = () => {
@@ -44,5 +45,18 @@ const Navbar = () => {
     </nav>
   );
 };
+
+export default Navbar;
+*/
+
+import React from 'react'
+
+function Navbar() {
+  return (
+    <nav className='bg-[#16423C] w-full h-14 mt-2 rounded-lg'>
+
+    </nav>
+  )
+}
 
 export default Navbar;
