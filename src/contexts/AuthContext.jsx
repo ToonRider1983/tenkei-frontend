@@ -36,7 +36,7 @@ export default function AuthContextProvider({ children }) {
       const res = await axios.post("/auth/login", credential);
       addAccessToken(res.data.accessToken);
       setAuthUser(res.data.user);
-     
+
     } catch (error) {
       console.error("Error logging in:", error);
       throw error;

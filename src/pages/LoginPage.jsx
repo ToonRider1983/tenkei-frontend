@@ -1,26 +1,30 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/use-auth";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  // const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { login } = useAuth();
+  const [authUser, setAuthUser] = useState(null);
   const navigate = useNavigate();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    try {
-      const input = { User_ID: username, User_Pass: password };
-      const res = await login(input);
-      setError("login success");
 
+    try {
+    const input = { User_ID: username, User_Pass: password }; // สร้าง input object
+    const res = await login(input); // รอผลจากฟังก์ชัน login
+        setAuthUser(res);
+        setError("login success"); // เคลียร์ข้อผิดพลาด
+ 
       // Navigate to dashboard on successful login
       navigate("/dashboard"); 
     } catch (err) {
-      setError("Invalid username or password");
+      setError("Invalid username or password"); // หากมีข้อผิดพลาดอื่นๆ
     }
   };
 
