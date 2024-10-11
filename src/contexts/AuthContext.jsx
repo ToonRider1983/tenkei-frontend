@@ -18,6 +18,7 @@ export default function AuthContextProvider({ children }) {
       if (response.status === 200) {
         setAuthUser(response.data.user);
       }
+      setAuthUser(response.data.user);
     } catch (error) {
       console.error('Error fetching user data:', error);
       setAuthUser(null);

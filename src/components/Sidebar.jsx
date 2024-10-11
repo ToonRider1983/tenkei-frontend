@@ -23,10 +23,6 @@ const menuItems = [
   { icon: HiOutlineCloudDownload, label: 'Export', to: '/export' },
 ];
 
-const handleLogout = () => {
-  logout();
-};
-
 function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
@@ -82,9 +78,9 @@ function Sidebar() {
       <div className='mt-auto mb-2.5 mr-2 ml-2 py-2 bg-[#1D594F] rounded-lg'>
         <div className={`flex items-center justify-between px-3 text-white ${isCollapsed ? 'justify-center' : ''}`}>
           {authUser && !isCollapsed && (
-            <span className='-mt-4 ml-3 text-sm lg:text-base'>{authUser.name}</span>
+            <span className='text-sm lg:text-base truncate'>{authUser.User_Name}</span>
           )}
-          <Link to='/' onClick={handleLogout} className='text-2xl cursor-pointer mt-2 hover:text-gray-300'>
+          <Link  onClick={logout} className='text-2xl cursor-pointer hover:text-gray-300'>
             <HiMiniArrowLeftOnRectangle />
           </Link>
         </div>
