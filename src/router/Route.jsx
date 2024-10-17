@@ -11,6 +11,7 @@ import PlanListPage from "../pages/PlanListPage";
 import PurchaseInfoPage from "../pages/PurchaseInfoPage";
 import PurchaseListPage from "../pages/PurchaseListPage";
 import ResultInfoPage from "../pages/ResultInfoPage";
+import ProcessG_PlanPage from "../pages/ProcessG_PlanPage"
 import DashboardPage from "../pages/DashboardPage"
 
 const router = createBrowserRouter([
@@ -57,6 +58,10 @@ const router = createBrowserRouter([
     {
         path:"/result-info",
         element: <ResultInfoPage />,
+    },
+    {
+        path:"/processg-plan-list",
+        element: <ProcessG_PlanPage />,
     },
     {
         path:"/cost-info",

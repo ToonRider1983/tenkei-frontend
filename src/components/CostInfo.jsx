@@ -1,6 +1,7 @@
 import React from 'react';
 import Footer from '../components/Footer';
-
+import Navbar from "../components/Navbar";
+import Sidebar from "../components/Sidebar";
 const CostInfo = () => {
   // Function to handle footer actions
   const handleAction = (action) => {
@@ -26,6 +27,10 @@ const CostInfo = () => {
   ));
 
   return (
+    <div className="flex bg-[#E9EFEC] h-[100vh]">
+      <Sidebar />
+      <div className="flex flex-col w-screen mr-2 ml-2">
+        <Navbar />
     <div className="min-h-screen flex flex-col justify-between">
       <div className="p-4">
         <h1 className="text-2xl font-bold mb-6 text-center">Cost Info</h1>
@@ -365,6 +370,8 @@ const CostInfo = () => {
     </div>
       {/* Footer */}
       <Footer handleAction={handleAction} />
+    </div>
+    </div>
     </div>
   );
 }
