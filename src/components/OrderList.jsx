@@ -1,21 +1,21 @@
-import React from "react";
-import Navbar from "../components/Navbar";
-import Sidebar from "../components/Sidebar";
+
 import { FaCircle, FaSquareFull } from "react-icons/fa6"
 import { IoIosArrowRoundForward } from "react-icons/io"
 import { MdStarRate } from "react-icons/md"
+import Sidebar from "../components/Sidebar"
+import Navbar from "../components/Navbar"
 
-export default function OrderList() {
-  return (
-    <div className="flex bg-[#E9EFEC] h-[100vh]">
-      <Sidebar />
+
+const OrderList = () => {
+    return (
+      <div className="flex bg-[#E9EFEC] h-[100vh]">
+        <Sidebar />
       <div className="flex flex-col w-screen mr-2 ml-2">
-        <Navbar />
-
-        <div>
+        <Navbar />       
             <div className="flex justify-center items-center py-3">
                 <label className="text-xl font-bold">Order List</label>
             </div>
+        </div>
             <hr />
             <div className="flex justify-between items-center mx-5 py-4">
                 <div className="flex gap-2 items-center">
@@ -985,9 +985,7 @@ export default function OrderList() {
                 </div>
             </div>
         </div>
-
-
-      </div>
-    </div>
-  );
+    )
 }
+
+export default OrderList
