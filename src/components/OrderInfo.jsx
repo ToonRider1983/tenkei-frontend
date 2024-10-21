@@ -1,15 +1,151 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useOrder } from "../hooks/use-order";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { FaArrowDownLong, FaArrowRightLong } from "react-icons/fa6";
 import Swal from "sweetalert2";
 export default function OrderInfo() {
+  const navigate = useNavigate();
   const [searchOrderNo, setSearchOrderNo] = useState("");
+  const [OrderNo, setOrderNo] = useState("");
+  const [autoYearChange, setAutoYearChange] = useState(false);
+  const [requestDelivery, setRequestDelivery] = useState("");
+  const [productDelivery, setProductDelivery] = useState("");
+  const [confirmDelivery, setconfirmDelivery] = useState("");
+  const [navDelivery, setnavDelivery] = useState("");
+  const [navName, setNavName] = useState(''); 
+  const [productName, setProductName] = useState(''); 
+  const [navSize, setNavSize] = useState(''); 
+  const [productSize, setProductSize] = useState('');
+  const [customerDraw, setCustomerDraw] = useState('');
+  const [companyDraw, setCompanyDraw] = useState('');
+  const [productDraw, setProductDraw] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [pdTargetQty, setPdTargetQty] = useState('');
+  const [isOrderNoLocked, setOrderNoLocked] = useState(true);
   // ฟังก์ชันสำหรับจัดการการเปลี่ยนแปลงของฟิลด์
   const handleInputChange = (event) => {
-    setSearchOrderNo(event.target.value); // อัปเดตค่าใน state
+    setSearchOrderNo(event.target.value);
+    setOrderNo(event.target.value);
   };
+  const handleAutoYearChange = (event) => {
+    setAutoYearChange(event.target.checked);
+  };
+  const handleRequestDeliveryChange = (event) => {
+    const deliveryDate = event.target.value;
+    setRequestDelivery(deliveryDate);
+  };
+
+  const handleRequestDeliveryAfterUpdate = () => {
+    if (autoYearChange) {
+      // แปลงวันที่จากรูปแบบ DD/MM/YYYY เป็น Date object
+      const parts = requestDelivery.split("/"); // แบ่งวันที่ออกเป็นส่วน ๆ
+      const deliveryDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); // สร้าง Date object โดยใช้รูปแบบ YYYY-MM-DD
+
+      const now = new Date(); // วันที่ปัจจุบัน
+      const differenceInDays = Math.floor(
+        (now - deliveryDate) / (1000 * 60 * 60 * 24)
+      ); // คำนวณความแตกต่างในวัน
+
+      // ตรวจสอบว่าความแตกต่างมากกว่า 183 วันหรือไม่
+      if (differenceInDays > 183) {
+        const newDeliveryDate = new Date(
+          deliveryDate.setFullYear(deliveryDate.getFullYear() + 1)
+        ); // เพิ่มปี
+
+        // แปลงวันที่ใหม่กลับไปเป็น DD/MM/YYYY
+        const formattedNewDeliveryDate = `${String(
+          newDeliveryDate.getDate()
+        ).padStart(2, "0")}/${String(newDeliveryDate.getMonth() + 1).padStart(
+          2,
+          "0"
+        )}/${newDeliveryDate.getFullYear()}`;
+
+        // ตั้งค่าใหม่ให้กับ requestDelivery และตัวแปรอื่น ๆ ด้วยรูปแบบ DD/MM/YYYY
+        setRequestDelivery(formattedNewDeliveryDate);
+        setProductDelivery(formattedNewDeliveryDate);
+        setconfirmDelivery(formattedNewDeliveryDate);
+        setnavDelivery(formattedNewDeliveryDate);
+      }
+    }
+  };
+
+  const handleGoods_Name_Reflect = () => {
+    setProductName(navName); // ตั้งค่า Product_Name ให้เป็นค่าของ NAV_Name
+  };
+
+  const handleGoods_Size_Reflect = () => {
+    setProductSize(navSize); // ตั้งค่า Product_Size ให้เป็นค่าของ NAV_Size
+  };
+
+
+  const handleConfirm = () => {
+    if (customerDraw) {
+      if (companyDraw) {
+        setProductDraw(`Com:${companyDraw}/Cus:${customerDraw}`);
+      } else {
+        setProductDraw(`Cus:${customerDraw}`);
+      }
+    } else {
+      if (companyDraw) {
+        setProductDraw(`Com:${companyDraw}`);
+      } else {
+        setProductDraw(null);
+      }
+    }
+  };
+
+  const handleDrawNoReflectClick = () => {
+    const message = `
+      Company Draw: ${companyDraw}
+      Customer Draw: ${customerDraw}
+      Are you sure you want to proceed?
+    `;
+
+    Swal.fire({
+      title: 'Confirm Action',
+      text: message,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes',
+      cancelButtonText: 'No'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        handleConfirm(); // เรียกใช้ฟังก์ชันยืนยันถ้าผู้ใช้กด Yes
+      }
+    });
+  };
+  const handleQuantityChange = async (newQuantity) => {
+    const result = await Swal.fire({
+      title: 'ยืนยันการเปลี่ยนแปลง',
+      text: "คุณต้องการอัปเดตจำนวนหรือไม่?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'ใช่',
+      cancelButtonText: 'ไม่',
+    });
+
+    if (result.isConfirmed) {
+      // ถ้ายืนยัน ให้ตั้งค่าของ Pd_Target_Qty
+      setPdTargetQty(newQuantity);
+      // ทำการอัปเดตข้อมูลหรือการกระทำที่จำเป็นที่นี่
+    } else {
+      // ถ้าไม่ยืนยัน ให้คืนค่ากลับไปยังค่าเดิม
+      setQuantity(quantity);
+    }
+  };
+
+  useEffect(() => {
+    // ตรวจสอบการเปลี่ยนแปลงของค่า Quantity
+    if (quantity) {
+      handleQuantityChange(quantity);
+    }
+  }, [quantity]);
+  // ฟังก์ชันนี้จะถูกเรียกใช้เมื่อค่า autoYearChange เปลี่ยนแปลง
+  useEffect(() => {
+    handleRequestDeliveryAfterUpdate(); // เรียกใช้ฟังก์ชันทุกครั้งที่ autoYearChange เปลี่ยน
+  }, [autoYearChange, requestDelivery]);
 
   const {
     CustomerData,
@@ -20,6 +156,7 @@ export default function OrderInfo() {
     fetchOrders,
     editOrders,
     fetchWorkerGroups,
+    deleteOrder,
   } = useOrder();
 
   // ฟังก์ชันสำหรับตรวจสอบว่าฟิลด์ว่างหรือไม่
@@ -40,6 +177,23 @@ export default function OrderInfo() {
         icon: "warning",
         confirmButtonText: "ตกลง",
       });
+    }
+  };
+
+  const handleF2Click = () => {
+    try {
+      // เรียกใช้ฟังก์ชัน Search_Permission
+      searchPermission(false);
+
+      // เรียกใช้ฟังก์ชัน Edit_Permission
+      editPermission(true);
+
+      const orderNoInput = document.getElementById("Order_No");
+
+      orderNoInput.disabled = true;
+    } catch (error) {
+      // จัดการข้อผิดพลาด
+      alert("Error occurs when F2_Click\nPlease contact system administrator.");
     }
   };
 
@@ -69,6 +223,48 @@ export default function OrderInfo() {
         confirmButtonText: "ตกลง",
       });
       console.error("Error in F3_Click:", error); // แสดงข้อผิดพลาดใน Console
+    }
+  };
+
+  const handleF4Click = () => {
+    try {
+      // ส่งค่า Search_Order_No ไปที่หน้า /plan-info
+      navigate("/purchase-info", { state: { searchOrderNo: searchOrderNo } });
+    } catch (error) {
+      // จัดการข้อผิดพลาด
+      alert("Error occurs when F4_Click\nPlease contact system administrator.");
+    }
+  };
+
+  const handleF5Click = () => {
+    try {
+      // ส่งค่า Search_Order_No ไปที่หน้า /plan-info
+      navigate("/plan-info", { state: { OrderNo: OrderNo } });
+    } catch (error) {
+      // จัดการข้อผิดพลาด
+      alert("Error occurs when F5_Click\nPlease contact system administrator.");
+    }
+  };
+
+  const handleF6Click = async () => {
+    try {
+      // ตรวจสอบว่า OrderNo เป็นค่าว่างหรือไม่
+      if (!OrderNo) {
+        await Swal.fire({
+          title: "ข้อมูลไม่ถูกต้อง",
+          text: "(Order_No) เป็นค่าว่าง",
+          icon: "warning",
+          confirmButtonText: "ตกลง",
+        }); // แสดงข้อความเตือนถ้า OrderNo ว่าง
+        return; // ออกจากฟังก์ชัน
+      }
+      // ส่ง OrderNo เป็นพารามิเตอร์ใน URL
+      navigate(`/reports/RD_Process_SheetPage/${OrderNo}`, {
+        state: { OrderNo },
+      });
+    } catch (error) {
+      // จัดการข้อผิดพลาด
+      alert("Error occurs when F6_Click\nPlease contact system administrator.");
     }
   };
 
@@ -130,6 +326,40 @@ export default function OrderInfo() {
       });
     }
   };
+
+  const handleF10Click = async () => {
+    try {
+      // แสดงกล่องยืนยันการลบข้อมูล
+      const result = await Swal.fire({
+        title: "ยืนยันการลบ?",
+        text: "คุณต้องการลบข้อมูลนี้หรือไม่?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "ใช่, ลบเลย!",
+        cancelButtonText: "ยกเลิก",
+      });
+
+      // ตรวจสอบว่าผู้ใช้เลือก "ยืนยัน" หรือไม่
+      if (result.isConfirmed) {
+        const response = await deleteOrder(searchOrderNo); // เรียกใช้ฟังก์ชันลบคำสั่ง
+        console.log("Delete result:", response);
+
+        // แสดงข้อความว่าลบเรียบร้อยแล้ว
+        Swal.fire(
+          "ลบเรียบร้อย!",
+          "ข้อมูลของคุณได้ถูกลบเรียบร้อยแล้ว.",
+          "success"
+        );
+      }
+    } catch (error) {
+      // จัดการข้อผิดพลาด
+      alert(
+        "Error occurs when F10_Click\nPlease contact system administrator."
+      );
+    }
+  };
   const handleF11Click = async () => {
     try {
       // ปิดการค้นหาและการแก้ไข
@@ -189,8 +419,10 @@ export default function OrderInfo() {
               <label>Order No.</label>
               <div>
                 <input
-                  disabled
+                  disabled={isOrderNoLocked}
                   id="Order_No"
+                  value={OrderNo}
+                  onChange={handleInputChange}
                   type="text"
                   className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1"
                 />
@@ -204,9 +436,15 @@ export default function OrderInfo() {
                   id="Product_Grp_CD"
                   className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
                 >
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
+                  {Array.isArray(WorkerData) && WorkerData.length > 0 ? (
+                    WorkergData.map((worker) => (
+                      <option key={worker.WorkG_CD} value={worker.WorkG_CD}>
+                        {worker.WorkG_CD}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">No Worker Groups Available</option> // แสดงข้อความถ้าไม่มีข้อมูล
+                  )}
                 </select>
               </div>
               <div className="w-28">
@@ -221,6 +459,8 @@ export default function OrderInfo() {
             <div className="flex gap-2">
               <input
                 id="Auto_Year_Change"
+                checked={autoYearChange}
+                onChange={() => setAutoYearChange(!autoYearChange)}
                 type="checkbox"
                 className="w-6 h-6"
               />
@@ -240,6 +480,8 @@ export default function OrderInfo() {
                       <input
                         disabled
                         id="Request_Delivery"
+                        value={requestDelivery}
+                        onChange={handleRequestDeliveryChange}
                         type="text"
                         className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                       />
@@ -252,6 +494,8 @@ export default function OrderInfo() {
                     <div>
                       <input
                         disabled
+                        value={productDelivery}
+                        onChange={(e) => setProductDelivery(e.target.value)}
                         id="Product_Delivery"
                         type="text"
                         className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -266,6 +510,8 @@ export default function OrderInfo() {
                       <input
                         disabled
                         id="Confirm_Delivery"
+                        value={confirmDelivery}
+                        onChange={(e) => setconfirmDelivery(e.target.value)}
                         type="text"
                         className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                       />
@@ -279,6 +525,8 @@ export default function OrderInfo() {
                       <input
                         disabled
                         id="NAV_Delivery"
+                        value={navDelivery}
+                        onChange={(e) => setnavDelivery(e.target.value)}
                         type="text"
                         className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                       />
@@ -364,11 +612,13 @@ export default function OrderInfo() {
                       disabled
                       id="NAV_Name"
                       type="text"
+                      value={navName}
+                      onChange={(e) => setNavName(e.target.value)}
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
                   </div>
                   <div className="w-1/6">
-                    <button className="bg-blue-500 text-white text-lg w-full py-[5px] rounded-md hover:bg-blue-700 text-[12px] flex justify-center items-center">
+                    <button onClick={handleGoods_Name_Reflect}  className="bg-blue-500 text-white text-lg w-full py-[5px] rounded-md hover:bg-blue-700 text-[12px] flex justify-center items-center">
                       <FaArrowDownLong />
                     </button>
                   </div>
@@ -382,6 +632,8 @@ export default function OrderInfo() {
                       disabled
                       id="Product_Name"
                       type="text"
+                      value={productName}
+                      onChange={(e) => setProductName(e.target.value)}
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
                   </div>
@@ -395,11 +647,13 @@ export default function OrderInfo() {
                       disabled
                       id="NAV_Size"
                       type="text"
+                      value={navSize} 
+                      onChange={(e) => setNavSize(e.target.value)}
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
                   </div>
                   <div className="w-1/6">
-                    <button className="bg-blue-500 text-white text-lg w-full py-[5px] rounded-md hover:bg-blue-700 text-[12px] flex justify-center items-center">
+                    <button onClick={handleGoods_Size_Reflect} className="bg-blue-500 text-white text-lg w-full py-[5px] rounded-md hover:bg-blue-700 text-[12px] flex justify-center items-center">
                       <FaArrowDownLong />
                     </button>
                   </div>
@@ -413,6 +667,8 @@ export default function OrderInfo() {
                       disabled
                       id="Product_Size"
                       type="text"
+                      value={productSize}
+                      onChange={(e) => setProductSize(e.target.value)}
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
                   </div>
@@ -427,6 +683,8 @@ export default function OrderInfo() {
                         <input
                           disabled
                           id="Customer_Draw"
+                          value={customerDraw}
+                          onChange={(e) => setCustomerDraw(e.target.value)}
                           type="text"
                           className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                         />
@@ -440,6 +698,8 @@ export default function OrderInfo() {
                         <input
                           disabled
                           id="Company_Draw"
+                          value={companyDraw}
+                          onChange={(e) => setCompanyDraw(e.target.value)}
                           type="text"
                           className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                         />
@@ -447,7 +707,7 @@ export default function OrderInfo() {
                     </div>
                   </div>
                   <div className="w-1/6">
-                    <button className="bg-blue-500 text-white text-lg w-full py-[22px] rounded-md hover:bg-blue-700 text-[12px] flex justify-center items-center">
+                    <button onClick={handleDrawNoReflectClick} className="bg-blue-500 text-white text-lg w-full py-[22px] rounded-md hover:bg-blue-700 text-[12px] flex justify-center items-center">
                       <FaArrowDownLong />
                     </button>
                   </div>
@@ -460,6 +720,8 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="Product_Draw"
+                      value={productDraw}
+                      onChange={(e) => setProductDraw(e.target.value)}
                       type="text"
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
@@ -474,6 +736,8 @@ export default function OrderInfo() {
                       <input
                         disabled
                         id="Quantity"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
                         type="text"
                         className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                       />
@@ -1108,7 +1372,6 @@ export default function OrderInfo() {
                             value={customer.Customer_CD}
                           >
                             {customer.Customer_CD}
-                        
                           </option>
                         ))
                       ) : (
@@ -1462,6 +1725,8 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="Pd_Target_Qty"
+                      value={pdTargetQty}
+                      onChange={(e) => setPdTargetQty(e.target.value)}
                       type="text"
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
@@ -1559,6 +1824,7 @@ export default function OrderInfo() {
                 </button>
                 <button
                   id="editButton"
+                  onClick={handleF2Click}
                   className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white"
                 >
                   Edit <br />
@@ -1572,17 +1838,26 @@ export default function OrderInfo() {
                   New Add <br />
                   追加 (F3)
                 </button>
-                <button className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white">
+                <button
+                  onClick={handleF4Click}
+                  className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white"
+                >
                   Order <br />
                   受注 (F4)
                 </button>
               </div>
               <div className="grid grid-cols-4 gap-2">
-                <button className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white">
+                <button
+                  onClick={handleF5Click}
+                  className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white"
+                >
                   Plan <br />
                   計画 (F5)
                 </button>
-                <button className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white">
+                <button
+                  onClick={handleF6Click}
+                  className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white"
+                >
                   PS All <br />
                   全頁 (F6)
                 </button>
@@ -1603,7 +1878,10 @@ export default function OrderInfo() {
                   Save <br />
                   登録 (F9)
                 </button>
-                <button className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white">
+                <button
+                  onClick={handleF10Click}
+                  className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white"
+                >
                   Delete <br />
                   削除 (F10)
                 </button>
