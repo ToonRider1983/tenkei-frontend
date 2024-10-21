@@ -77,6 +77,20 @@ export default function OrderContextProvider({ children }) {
         }
     };
 
+    const deleteOrder = async (orderNo) => {
+        try {   
+            const response = await axios.delete(`/order/deleteOrder`, {
+                data: { Order_No: orderNo } // ส่งค่า Order_No ใน body
+            });
+    
+            console.log('Order deleted successfully:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error deleting order:', error);
+            throw new Error('Failed to delete order');
+        }
+    };
+
     useEffect(() => {
         fetchWorkerGroups(); // เรียกใช้ฟังก์ชันเพื่อดึงข้อมูลเมื่อคอมโพเนนต์ถูกโหลด
     }, []);
@@ -86,7 +100,7 @@ export default function OrderContextProvider({ children }) {
     }, []);
 
     return (
-        <OrderContext.Provider value={{CustomerData, WorkerData, WorkergData, orderData, searchOrderData, fetchOrders,editOrders, fetchWorkerGroups, fetchWorker }}>
+        <OrderContext.Provider value={{CustomerData, WorkerData, WorkergData, orderData, searchOrderData, fetchOrders,editOrders, fetchWorkerGroups, fetchWorker, deleteOrder }}>
             {children}
         </OrderContext.Provider>
     );

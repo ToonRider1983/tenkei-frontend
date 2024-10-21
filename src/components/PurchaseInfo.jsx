@@ -1,7 +1,10 @@
 import React from "react";
+import { useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 export default function PurchaseInfo() {
+  const location = useLocation(); // รับค่า state ที่ถูกส่งมา
+  const { searchOrderNo } = location.state || {}; // ตรวจสอบว่า state ถูกส่งมาแล้ว
   return (
     <div className="flex bg-[#E9EFEC] h-[100vh]">
       <Sidebar />
@@ -16,10 +19,19 @@ export default function PurchaseInfo() {
             <div className="flex gap-2 items-center">
               <label className="font-medium text-xs">Search_Order_No</label>
               <div className="w-3/5">
+              {searchOrderNo ? (
+
+                <input
+                  type="text"
+                  value={searchOrderNo}
+                  className="bg-[#cbfefe] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                />
+              ) : (
                 <input
                   type="text"
                   className="bg-[#cbfefe] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                 />
+              )}
               </div>
             </div>
             <div className="flex gap-2 items-center">
