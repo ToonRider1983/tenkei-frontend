@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOrder } from "../hooks/use-order";
+import Navbar from "../components/Navbar";
+import Sidebar from "../components/Sidebar";
 import { FaArrowDownLong, FaArrowRightLong } from "react-icons/fa6";
 import Swal from "sweetalert2";
-
 export default function OrderInfo() {
   const navigate = useNavigate();
   const [searchOrderNo, setSearchOrderNo] = useState("");
@@ -13,21 +14,16 @@ export default function OrderInfo() {
   const [productDelivery, setProductDelivery] = useState("");
   const [confirmDelivery, setconfirmDelivery] = useState("");
   const [navDelivery, setnavDelivery] = useState("");
-  const [navName, setNavName] = useState(''); 
-  const [productName, setProductName] = useState(''); 
-  const [navSize, setNavSize] = useState(''); 
-  const [productSize, setProductSize] = useState('');
-  const [customerDraw, setCustomerDraw] = useState('');
-  const [companyDraw, setCompanyDraw] = useState('');
-  const [productDraw, setProductDraw] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [pdTargetQty, setPdTargetQty] = useState('');
-  const [isOrderNoLocked, setOrderNoLocked] = useState(true);
-  // ฟังก์ชันสำหรับจัดการการเปลี่ยนแปลงของฟิลด์
-  const handleInputChange = (event) => {
-    setSearchOrderNo(event.target.value);
-    setOrderNo(event.target.value);
-  };
+  const [navName, setNavName] = useState("");
+  const [productName, setProductName] = useState("");
+  const [navSize, setNavSize] = useState("");
+  const [productSize, setProductSize] = useState("");
+  const [customerDraw, setCustomerDraw] = useState("");
+  const [companyDraw, setCompanyDraw] = useState("");
+  const [productDraw, setProductDraw] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [pdTargetQty, setPdTargetQty] = useState("");
+
   const handleAutoYearChange = (event) => {
     setAutoYearChange(event.target.checked);
   };
@@ -261,6 +257,208 @@ export default function OrderInfo() {
       }); // แจ้งเตือนผู้ใช้เกี่ยวกับข้อผิดพลาด
     }
   };
+  const handleInputChange = (event) => {
+    const { id, value } = event.target;
+
+    setOrderData((prevOrderData) => ({
+      ...prevOrderData,
+      [id]: value === "" ? null : value,
+    }));
+  };
+
+  const handleRequestDeliveryChange = (newDeliveryDate) => {
+    handleInputChange({
+      target: { id: "Request_Delivery", value: newDeliveryDate },
+    });
+  };
+
+  const handleProductDeliveryChange = (newProductDeliveryDate) => {
+    handleInputChange({
+      target: { id: "Product_Delivery", value: newProductDeliveryDate },
+    });
+  };
+
+  const handleConfirmDeliveryChange = (newConfirmDeliveryDate) => {
+    handleInputChange({
+      target: { id: "Confirm_Delivery", value: newConfirmDeliveryDate },
+    });
+  };
+
+  const handleNAVDeliveryChange = (newNAVDeliveryDate) => {
+    handleInputChange({
+      target: { id: "NAV_Delivery", value: newNAVDeliveryDate },
+    });
+  };
+
+  const handleDeliveryDateUpdate = (deliveryDateStr, handleChange) => {
+    // แปลงวันที่จากรูปแบบ DD/MM/YYYY เป็น Date object
+    const parts = deliveryDateStr.split("/"); // แบ่งวันที่ออกเป็นส่วน ๆ
+    const deliveryDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); // สร้าง Date object โดยใช้รูปแบบ YYYY-MM-DD
+
+    const now = new Date(); // วันที่ปัจจุบัน
+    const differenceInDays = Math.floor(
+      (now - deliveryDate) / (1000 * 60 * 60 * 24)
+    ); // คำนวณความแตกต่างในวัน
+
+    // ตรวจสอบว่าความแตกต่างมากกว่า 183 วันหรือไม่
+    if (differenceInDays > 183) {
+      const newDeliveryDate = new Date(
+        deliveryDate.setFullYear(deliveryDate.getFullYear() + 1)
+      ); // เพิ่มปี
+
+      // แปลงวันที่ใหม่กลับไปเป็น DD/MM/YYYY
+      const formattedNewDeliveryDate = `${String(
+        newDeliveryDate.getDate()
+      ).padStart(2, "0")}/${String(newDeliveryDate.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}/${newDeliveryDate.getFullYear()}`;
+
+      // เรียกใช้ฟังก์ชันสำหรับการเปลี่ยนแปลงวันที่
+      handleChange(formattedNewDeliveryDate);
+    }
+  };
+
+  const handleRequestDeliveryAfterUpdate = () => {
+    if (autoYearChange) {
+      handleDeliveryDateUpdate(
+        orderData.Request_Delivery,
+        handleRequestDeliveryChange
+      );
+      handleDeliveryDateUpdate(
+        orderData.Product_Delivery,
+        handleProductDeliveryChange
+      );
+      handleDeliveryDateUpdate(
+        orderData.Confirm_Delivery,
+        handleConfirmDeliveryChange
+      );
+      handleDeliveryDateUpdate(orderData.NAV_Delivery, handleNAVDeliveryChange);
+    }
+  };
+
+  useEffect(() => {
+    if (
+      autoYearChange &&
+      orderData?.Request_Delivery &&
+      orderData?.Product_Delivery &&
+      orderData?.Confirm_Delivery &&
+      orderData?.NAV_Delivery
+    ) {
+      handleRequestDeliveryAfterUpdate();
+    }
+  }, [
+    autoYearChange,
+    orderData?.Request_Delivery,
+    orderData?.Product_Delivery,
+    orderData?.Confirm_Delivery,
+    orderData?.NAV_Delivery,
+  ]);
+
+  const handleProductName = (newProductName) => {
+    handleInputChange({
+      target: { id: "Product_Name", value: newProductName },
+    });
+  };
+
+  const handleGoods_Name_Reflect = () => {
+    handleProductName(orderData.NAV_Name); // เรียกใช้ฟังก์ชันเพื่ออัปเดต Product_Name ด้วยค่า navName
+  };
+
+  const handlenavSizeName = (newnavSizeName) => {
+    handleInputChange({
+      target: { id: "Product_Size", value: newnavSizeName },
+    });
+  };
+
+  const handleGoods_Size_Reflect = () => {
+    handlenavSizeName(orderData.NAV_Size);
+  };
+
+  const handProductDraw = (newProductDraw) => {
+    handleInputChange({
+      target: { id: "Product_Draw", value: newProductDraw },
+    });
+  };
+
+  const handleConfirm = () => {
+    const customer = orderData.Customer_Draw || customerDraw;
+    const company = orderData.Company_Draw || companyDraw;
+
+    if (customer) {
+      if (company) {
+        handProductDraw(`Com:${company}/Cus:${customer}`);
+      } else {
+        handProductDraw(`Cus:${customer}`);
+      }
+    } else {
+      if (company) {
+        handProductDraw(`Com:${company}`);
+      } else {
+        handProductDraw(null);
+      }
+    }
+  };
+
+  const handleDrawNoReflectClick = () => {
+    const message = `
+      Company Draw: ${orderData.Customer_Draw}
+      Customer Draw: ${orderData.Company_Draw}
+      Are you sure you want to proceed?
+    `;
+
+    Swal.fire({
+      title: "Confirm Action",
+      text: message,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes",
+      cancelButtonText: "No",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        handleConfirm(); // เรียกใช้ฟังก์ชันยืนยันถ้าผู้ใช้กด Yes
+      }
+    });
+  };
+
+  
+  const handPdTargetQty = (newPdTargetQty) => {
+    handleInputChange({
+      target: { id: "Pd_Target_Qty", value: newPdTargetQty },
+    });
+  };
+  
+  const handleQuantityChange = async (newQuantity) => {
+    const result = await Swal.fire({
+      title: "ยืนยันการเปลี่ยนแปลง",
+      text: "คุณต้องการอัปเดตจำนวนหรือไม่?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "ใช่",
+      cancelButtonText: "ไม่",
+    });
+  
+    if (result.isConfirmed) {
+      handPdTargetQty(orderData.Quantity); // ตั้งค่าจำนวนเป้าหมายเป็นค่าที่ใหม่
+ 
+    } else {
+      handPdTargetQty(orderData.Pd_Target_Qty); // ตั้งค่าจำนวนเป้าหมายกลับเป็นค่าเดิม
+  
+    }
+  };
+  
+ 
+  useEffect(() => {
+    if (
+     
+      orderData?.Quantity
+    ) {
+      handleQuantityChange();
+    }
+  }, [
+   
+    orderData?.Quantity,
+  ]);
 
   return (
     <div className="flex bg-[#E9EFEC] h-[100vh]">
@@ -278,50 +476,81 @@ export default function OrderInfo() {
               <label>Search_Order_No</label>
               <div>
                 <input
-                  disabled
                   id="Search_Order_No"
                   value={searchOrderNo}
-                  onChange={handleInputChange}
+                  onChange={(e) => setSearchOrderNo(e.target.value)}
                   type="text"
                   className="bg-[#ccffff] border-solid border-2 border-gray-500 rounded-md px-1"
                 />
               </div>
             </div>
+
             <div className="flex gap-2">
               <label>Order No.</label>
               <div>
-                <input
-                  disabled={isOrderNoLocked}
-                  id="Order_No"
-                  value={OrderNo}
-                  onChange={handleInputChange}
-                  type="text"
-                  className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1"
-                />
+                {orderData ? (
+                  <input
+                    id="Order_No"
+                    value={orderData.Order_No}
+                    onChange={handleInputChange}
+                    type="text"
+                    className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1"
+                  />
+                ) : (
+                  <input
+                    id="Order_No"
+                    value=""
+                    onChange={handleInputChange}
+                    type="text"
+                    className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1"
+                  />
+                )}
               </div>
             </div>
+
             <div className="flex gap-2">
               <label>Production Group</label>
               <div className="w-28">
-                <select
-                  disabled
-                  id="Product_Grp_CD"
-                  className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
-                >
-                  {Array.isArray(WorkerData) && WorkerData.length > 0 ? (
-                    WorkergData.map((worker) => (
-                      <option key={worker.WorkG_CD} value={worker.WorkG_CD}>
-                        {worker.WorkG_CD}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="">No Worker Groups Available</option> // แสดงข้อความถ้าไม่มีข้อมูล
-                  )}
-                </select>
+                {orderData ? (
+                  <select
+                    id="Product_Grp_CD"
+                    className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
+                  >
+                    <option
+                      key={orderData.Product_Grp_CD}
+                      value={orderData.Product_Grp_CD}
+                    >
+                      {orderData.Product_Grp_CD}
+                    </option>
+                    {Array.isArray(WorkerData) && WorkerData.length > 0 ? (
+                      WorkergData.map((worker) => (
+                        <option key={worker.WorkG_CD} value={worker.WorkG_CD}>
+                          {worker.WorkG_CD}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">No Worker Groups Available</option> // แสดงข้อความถ้าไม่มีข้อมูล
+                    )}
+                  </select>
+                ) : (
+                  <select
+                    id="Product_Grp_CD"
+                    className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
+                  >
+                    {Array.isArray(WorkerData) && WorkerData.length > 0 ? (
+                      WorkergData.map((worker) => (
+                        <option key={worker.WorkG_CD} value={worker.WorkG_CD}>
+                          {worker.WorkG_CD}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">No Worker Groups Available</option> // แสดงข้อความถ้าไม่มีข้อมูล
+                    )}
+                  </select>
+                )}
               </div>
               <div className="w-28">
                 <input
-                  disabled
                   id="Product_Grp_Input"
                   type="text"
                   className="bg-white border-solid border-2 border-gray-500 rounded-md px-1"
@@ -349,14 +578,25 @@ export default function OrderInfo() {
                       Request Delivery Date
                     </label>
                     <div>
-                      <input
-                        disabled
-                        id="Request_Delivery"
-                        value={requestDelivery}
-                        onChange={handleRequestDeliveryChange}
-                        type="text"
-                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="Request_Delivery"
+                          value={orderData.Request_Delivery || ""}
+                          onChange={(event) => handleInputChange(event)}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="Request_Delivery"
+                          value=""
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center mb-8">
@@ -364,14 +604,25 @@ export default function OrderInfo() {
                       Production Delivery Date
                     </label>
                     <div>
-                      <input
-                        disabled
-                        value={productDelivery}
-                        onChange={(e) => setProductDelivery(e.target.value)}
-                        id="Product_Delivery"
-                        type="text"
-                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="Product_Delivery"
+                          value={orderData.Product_Delivery || ""}
+                          onChange={(event) => handleInputChange(event)}
+                          type="text"
+                          className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          value={productDelivery}
+                          onChange={(e) => setProductDelivery(e.target.value)}
+                          id="Product_Delivery"
+                          type="text"
+                          className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center mb-8  ">
@@ -379,14 +630,25 @@ export default function OrderInfo() {
                       Comfirm Delivery Date
                     </label>
                     <div>
-                      <input
-                        disabled
-                        id="Confirm_Delivery"
-                        value={confirmDelivery}
-                        onChange={(e) => setconfirmDelivery(e.target.value)}
-                        type="text"
-                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="Confirm_Delivery"
+                          value={orderData.Confirm_Delivery || ""}
+                          onChange={(event) => handleInputChange(event)}
+                          type="text"
+                          className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="Confirm_Delivery"
+                          value={confirmDelivery}
+                          onChange={(e) => setconfirmDelivery(e.target.value)}
+                          type="text"
+                          className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center">
@@ -394,14 +656,25 @@ export default function OrderInfo() {
                       NAV Delivery Date
                     </label>
                     <div>
-                      <input
-                        disabled
-                        id="NAV_Delivery"
-                        value={navDelivery}
-                        onChange={(e) => setnavDelivery(e.target.value)}
-                        type="text"
-                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="NAV_Delivery"
+                          value={orderData.NAV_Delivery || ""}
+                          onChange={(event) => handleInputChange(event)}
+                          type="text"
+                          className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="NAV_Delivery"
+                          value={navDelivery}
+                          onChange={(e) => setnavDelivery(e.target.value)}
+                          type="text"
+                          className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -480,17 +753,31 @@ export default function OrderInfo() {
                     NAV Goods Name
                   </label>
                   <div className="w-3/6">
-                    <input
-                      disabled
-                      id="NAV_Name"
-                      type="text"
-                      value={navName}
-                      onChange={(e) => setNavName(e.target.value)}
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="NAV_Name"
+                        type="text"
+                        value={orderData.NAV_Name || ""}
+                        onChange={handleInputChange}
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="NAV_Name"
+                        type="text"
+                        value={navName}
+                        onChange={(e) => setNavName(e.target.value)}
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                   <div className="w-1/6">
-                    <button onClick={handleGoods_Name_Reflect}  className="bg-blue-500 text-white text-lg w-full py-[5px] rounded-md hover:bg-blue-700 text-[12px] flex justify-center items-center">
+                    <button
+                      onClick={handleGoods_Name_Reflect}
+                      className="bg-blue-500 text-white text-lg w-full py-[5px] rounded-md hover:bg-blue-700 text-[12px] flex justify-center items-center"
+                    >
                       <FaArrowDownLong />
                     </button>
                   </div>
@@ -500,14 +787,25 @@ export default function OrderInfo() {
                     Production Goods Name
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Product_Name"
-                      type="text"
-                      value={productName}
-                      onChange={(e) => setProductName(e.target.value)}
-                      className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Product_Name"
+                        type="text"
+                        value={orderData.Product_Name || ""}
+                        onChange={(event) => handleInputChange(event)}
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Product_Name"
+                        type="text"
+                        value={productName}
+                        onChange={(e) => setProductName(e.target.value)}
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center w-full gap-2 mb-2">
@@ -515,17 +813,31 @@ export default function OrderInfo() {
                     NAV Goods Size
                   </label>
                   <div className="w-3/6">
-                    <input
-                      disabled
-                      id="NAV_Size"
-                      type="text"
-                      value={navSize} 
-                      onChange={(e) => setNavSize(e.target.value)}
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="NAV_Size"
+                        type="text"
+                        value={orderData.NAV_Size || ""}
+                        onChange={handleInputChange}
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="NAV_Size"
+                        type="text"
+                        value={navSize}
+                        onChange={handleInputChange}
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                   <div className="w-1/6">
-                    <button onClick={handleGoods_Size_Reflect} className="bg-blue-500 text-white text-lg w-full py-[5px] rounded-md hover:bg-blue-700 text-[12px] flex justify-center items-center">
+                    <button
+                      onClick={handleGoods_Size_Reflect}
+                      className="bg-blue-500 text-white text-lg w-full py-[5px] rounded-md hover:bg-blue-700 text-[12px] flex justify-center items-center"
+                    >
                       <FaArrowDownLong />
                     </button>
                   </div>
@@ -535,14 +847,25 @@ export default function OrderInfo() {
                     Production Goods Size
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Product_Size"
-                      type="text"
-                      value={productSize}
-                      onChange={(e) => setProductSize(e.target.value)}
-                      className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Product_Size"
+                        type="text"
+                        value={orderData.Product_Size || ""}
+                        onChange={(event) => handleInputChange(event)}
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Product_Size"
+                        type="text"
+                        value={productSize}
+                        onChange={handleInputChange}
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center w-full gap-2 mb-2">
@@ -552,14 +875,25 @@ export default function OrderInfo() {
                         Cutomer_Draw
                       </label>
                       <div className="w-3/5">
-                        <input
-                          disabled
-                          id="Customer_Draw"
-                          value={customerDraw}
-                          onChange={(e) => setCustomerDraw(e.target.value)}
-                          type="text"
-                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                        />
+                        {orderData ? (
+                          <input
+                            disabled
+                            id="Customer_Draw"
+                            value={orderData.Customer_Draw || ""}
+                            onChange={handleInputChange}
+                            type="text"
+                            className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                          />
+                        ) : (
+                          <input
+                            disabled
+                            id="Customer_Draw"
+                            value={customerDraw}
+                            onChange={(e) => setCustomerDraw(e.target.value)}
+                            type="text"
+                            className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -567,19 +901,33 @@ export default function OrderInfo() {
                         Company_Draw
                       </label>
                       <div className="w-3/5">
-                        <input
-                          disabled
-                          id="Company_Draw"
-                          value={companyDraw}
-                          onChange={(e) => setCompanyDraw(e.target.value)}
-                          type="text"
-                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                        />
+                        {orderData ? (
+                          <input
+                            disabled
+                            id="Company_Draw"
+                            value={orderData.Company_Draw || ""}
+                            onChange={handleInputChange}
+                            type="text"
+                            className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                          />
+                        ) : (
+                          <input
+                            disabled
+                            id="Company_Draw"
+                            value={companyDraw}
+                            onChange={(e) => setCompanyDraw(e.target.value)}
+                            type="text"
+                            className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
                   <div className="w-1/6">
-                    <button onClick={handleDrawNoReflectClick} className="bg-blue-500 text-white text-lg w-full py-[22px] rounded-md hover:bg-blue-700 text-[12px] flex justify-center items-center">
+                    <button
+                      onClick={handleDrawNoReflectClick}
+                      className="bg-blue-500 text-white text-lg w-full py-[22px] rounded-md hover:bg-blue-700 text-[12px] flex justify-center items-center"
+                    >
                       <FaArrowDownLong />
                     </button>
                   </div>
@@ -589,14 +937,25 @@ export default function OrderInfo() {
                     Production Draw
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Product_Draw"
-                      value={productDraw}
-                      onChange={(e) => setProductDraw(e.target.value)}
-                      type="text"
-                      className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Product_Draw"
+                        value={orderData.Product_Draw || ""}
+                        onChange={(event) => handleInputChange(event)}
+                        type="text"
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Product_Draw"
+                        value={productDraw}
+                        onChange={(e) => setProductDraw(e.target.value)}
+                        type="text"
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex justify-between w-full gap-2 mb-2">
@@ -605,14 +964,25 @@ export default function OrderInfo() {
                       Quantity
                     </label>
                     <div className="w-3/12">
-                      <input
-                        disabled
-                        id="Quantity"
-                        value={quantity}
-                        onChange={(e) => setQuantity(e.target.value)}
-                        type="text"
-                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="Quantity"
+                          value={orderData.Quantity || ""}
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="Quantity"
+                          value={quantity}
+                          onChange={(e) => setQuantity(e.target.value)}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                     <div className="w-2/12">
                       <select
@@ -1594,14 +1964,25 @@ export default function OrderInfo() {
                     Production Target Qty
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Pd_Target_Qty"
-                      value={pdTargetQty}
-                      onChange={(e) => setPdTargetQty(e.target.value)}
-                      type="text"
-                      className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Pd_Target_Qty"
+                        value={orderData.Pd_Target_Qty || ""}
+                        onChange={(event) => handleInputChange(event)}
+                        type="text"
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Pd_Target_Qty"
+                        value={pdTargetQty}
+                        onChange={(e) => setPdTargetQty(e.target.value)}
+                        type="text"
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2 items-center mb-2">
@@ -1876,4 +2257,4 @@ const toggleButtons = (f3, f9, f11, f12) => {
   document.getElementById("saveButton").disabled = !f9;
   document.getElementById("nextInputButton").disabled = !f11;
   document.getElementById("exitButton").disabled = !f12;
-}
+};
