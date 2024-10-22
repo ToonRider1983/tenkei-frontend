@@ -2022,4 +2022,4 @@ const toggleButtons = (f3, f9, f11, f12) => {
   document.getElementById("saveButton").disabled = !f9;
   document.getElementById("nextInputButton").disabled = !f11;
   document.getElementById("exitButton").disabled = !f12;
-};
+}
