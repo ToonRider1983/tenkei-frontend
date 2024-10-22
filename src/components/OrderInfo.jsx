@@ -31,120 +31,6 @@ export default function OrderInfo() {
   const handleAutoYearChange = (event) => {
     setAutoYearChange(event.target.checked);
   };
-  const handleRequestDeliveryChange = (event) => {
-    const deliveryDate = event.target.value;
-    setRequestDelivery(deliveryDate);
-  };
-
-  const handleRequestDeliveryAfterUpdate = () => {
-    if (autoYearChange) {
-      // แปลงวันที่จากรูปแบบ DD/MM/YYYY เป็น Date object
-      const parts = requestDelivery.split("/"); // แบ่งวันที่ออกเป็นส่วน ๆ
-      const deliveryDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); // สร้าง Date object โดยใช้รูปแบบ YYYY-MM-DD
-
-      const now = new Date(); // วันที่ปัจจุบัน
-      const differenceInDays = Math.floor(
-        (now - deliveryDate) / (1000 * 60 * 60 * 24)
-      ); // คำนวณความแตกต่างในวัน
-
-      // ตรวจสอบว่าความแตกต่างมากกว่า 183 วันหรือไม่
-      if (differenceInDays > 183) {
-        const newDeliveryDate = new Date(
-          deliveryDate.setFullYear(deliveryDate.getFullYear() + 1)
-        ); // เพิ่มปี
-
-        // แปลงวันที่ใหม่กลับไปเป็น DD/MM/YYYY
-        const formattedNewDeliveryDate = `${String(
-          newDeliveryDate.getDate()
-        ).padStart(2, "0")}/${String(newDeliveryDate.getMonth() + 1).padStart(
-          2,
-          "0"
-        )}/${newDeliveryDate.getFullYear()}`;
-
-        // ตั้งค่าใหม่ให้กับ requestDelivery และตัวแปรอื่น ๆ ด้วยรูปแบบ DD/MM/YYYY
-        setRequestDelivery(formattedNewDeliveryDate);
-        setProductDelivery(formattedNewDeliveryDate);
-        setconfirmDelivery(formattedNewDeliveryDate);
-        setnavDelivery(formattedNewDeliveryDate);
-      }
-    }
-  };
-
-  const handleGoods_Name_Reflect = () => {
-    setProductName(navName); // ตั้งค่า Product_Name ให้เป็นค่าของ NAV_Name
-  };
-
-  const handleGoods_Size_Reflect = () => {
-    setProductSize(navSize); // ตั้งค่า Product_Size ให้เป็นค่าของ NAV_Size
-  };
-
-
-  const handleConfirm = () => {
-    if (customerDraw) {
-      if (companyDraw) {
-        setProductDraw(`Com:${companyDraw}/Cus:${customerDraw}`);
-      } else {
-        setProductDraw(`Cus:${customerDraw}`);
-      }
-    } else {
-      if (companyDraw) {
-        setProductDraw(`Com:${companyDraw}`);
-      } else {
-        setProductDraw(null);
-      }
-    }
-  };
-
-  const handleDrawNoReflectClick = () => {
-    const message = `
-      Company Draw: ${companyDraw}
-      Customer Draw: ${customerDraw}
-      Are you sure you want to proceed?
-    `;
-
-    Swal.fire({
-      title: 'Confirm Action',
-      text: message,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes',
-      cancelButtonText: 'No'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        handleConfirm(); // เรียกใช้ฟังก์ชันยืนยันถ้าผู้ใช้กด Yes
-      }
-    });
-  };
-  const handleQuantityChange = async (newQuantity) => {
-    const result = await Swal.fire({
-      title: 'ยืนยันการเปลี่ยนแปลง',
-      text: "คุณต้องการอัปเดตจำนวนหรือไม่?",
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'ใช่',
-      cancelButtonText: 'ไม่',
-    });
-
-    if (result.isConfirmed) {
-      // ถ้ายืนยัน ให้ตั้งค่าของ Pd_Target_Qty
-      setPdTargetQty(newQuantity);
-      // ทำการอัปเดตข้อมูลหรือการกระทำที่จำเป็นที่นี่
-    } else {
-      // ถ้าไม่ยืนยัน ให้คืนค่ากลับไปยังค่าเดิม
-      setQuantity(quantity);
-    }
-  };
-
-  useEffect(() => {
-    // ตรวจสอบการเปลี่ยนแปลงของค่า Quantity
-    if (quantity) {
-      handleQuantityChange(quantity);
-    }
-  }, [quantity]);
-  // ฟังก์ชันนี้จะถูกเรียกใช้เมื่อค่า autoYearChange เปลี่ยนแปลง
-  useEffect(() => {
-    handleRequestDeliveryAfterUpdate(); // เรียกใช้ฟังก์ชันทุกครั้งที่ autoYearChange เปลี่ยน
-  }, [autoYearChange, requestDelivery]);
 
   const {
     CustomerData,
@@ -156,6 +42,7 @@ export default function OrderInfo() {
     editOrders,
     fetchWorkerGroups,
     deleteOrder,
+    setOrderData,
   } = useOrder();
 
   // ฟังก์ชันสำหรับตรวจสอบว่าฟิลด์ว่างหรือไม่
@@ -198,20 +85,9 @@ export default function OrderInfo() {
 
   const handleF3Click = () => {
     try {
-      // เรียกใช้ฟังก์ชันสำหรับการค้นหาสิทธิ์
-      searchPermission(false); // ดึงข้อมูลสิทธิ์
-      editPermission(true); // เปิดการแก้ไขสิทธิ์
+      searchPermission(false);
+      editPermission(true);
 
-      // สร้างเรคคอร์ดใหม่
-      goToNewRecord();
-
-      // ตั้งค่า focus ไปที่ Order_No
-      setFocusToOrderNo();
-
-      // ล้างค่าฟิลด์ Search_Order_No
-      clearSearchOrderNo();
-
-      // ปิดและเปิดปุ่มตามลำดับ
       toggleButtons(false, true, true, false);
     } catch (error) {
       // จัดการข้อผิดพลาด
@@ -304,10 +180,7 @@ export default function OrderInfo() {
         // ดึงค่าจากฟิลด์ Order_No ที่มี id="Order_No"
         const orderNo = document.getElementById("Order_No").value;
 
-        // ยังไม่เสร็จเหลือ Use state
-
-        // บันทึกข้อมูลในฐานข้อมูล
-        await editOrders(orderNo); // ส่งค่า orderNo ไป
+        await editOrders(orderNo);
 
         // ปิดการแก้ไขสิทธิ์
         editPermission(false);
@@ -1997,18 +1870,6 @@ const editPermission = (status) => {
   document.getElementById("Pd_Split_Qty").disabled = !status;
   document.getElementById("Pd_Calc_Qty").disabled = !status;
   document.getElementById("NG_Qty").disabled = !status;
-};
-
-const goToNewRecord = () => {
-  console.log("Navigating to new record...");
-};
-
-const setFocusToOrderNo = () => {
-  console.log("Focus set to Order_No field.");
-};
-
-const clearSearchOrderNo = () => {
-  console.log("Search_Order_No field cleared.");
 };
 
 const toggleButtons = (f3, f9, f11, f12) => {
