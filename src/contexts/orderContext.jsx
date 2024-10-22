@@ -59,8 +59,8 @@ export default function OrderContextProvider({ children }) {
     // ฟังก์ชันสำหรับค้นหาข้อมูลการสั่งซื้อด้วยหมายเลข
     const searchOrderData = async (orderNo) => {
         try {
-            const response = await axios.post("/order/search_order", { Order_No: orderNo });
-            setOrderData(response.data); // อัปเดตข้อมูลที่ได้จาก API
+            const response = await axios.post("/order/search_order", { Order_No: orderNo  });
+            setOrderData(response.data.data.order); // อัปเดตข้อมูลที่ได้จาก API
         } catch (error) {
             console.error("Error fetching order data:", error);
         }
@@ -72,7 +72,7 @@ export default function OrderContextProvider({ children }) {
            console.log('Order updated successfully:', response.data);
            return response.data;
         } catch (error) {
-        console.error('Error updating order:', error);
+        console.error("Error updating order:", error.response?.data || error.message);
         throw new Error('Failed to update order');
         }
     };
@@ -80,7 +80,7 @@ export default function OrderContextProvider({ children }) {
     const deleteOrder = async (orderNo) => {
         try {   
             const response = await axios.delete(`/order/deleteOrder`, {
-                data: { Order_No: orderNo } // ส่งค่า Order_No ใน body
+                data: { Order_No: orderData.Order_No } // ส่งค่า Order_No ใน body
             });
     
             console.log('Order deleted successfully:', response.data);
@@ -100,7 +100,7 @@ export default function OrderContextProvider({ children }) {
     }, []);
 
     return (
-        <OrderContext.Provider value={{CustomerData, WorkerData, WorkergData, orderData, searchOrderData, fetchOrders,editOrders, fetchWorkerGroups, fetchWorker, deleteOrder }}>
+        <OrderContext.Provider value={{CustomerData, WorkerData, WorkergData, orderData, searchOrderData, fetchOrders,editOrders, fetchWorkerGroups, fetchWorker, deleteOrder,  setOrderData, }}>
             {children}
         </OrderContext.Provider>
     );
