@@ -110,7 +110,7 @@ export default function OrderInfo() {
   const handleF5Click = () => {
     try {
       // ส่งค่า Search_Order_No ไปที่หน้า /plan-info
-      navigate("/plan-info", { state: { OrderNo: OrderNo } });
+      navigate("/plan-info", { state: { OrderNo: orderData.Order_No } });
     } catch (error) {
       // จัดการข้อผิดพลาด
       alert("Error occurs when F5_Click\nPlease contact system administrator.");
@@ -130,7 +130,7 @@ export default function OrderInfo() {
         return; // ออกจากฟังก์ชัน
       }
       // ส่ง OrderNo เป็นพารามิเตอร์ใน URL
-      navigate(`/reports/RD_Process_SheetPage/${OrderNo}`, {
+      navigate(`/reports/RD_Process_SheetPage/${orderData.Order_No}`, {
         state: { OrderNo },
       });
     } catch (error) {
@@ -176,6 +176,14 @@ export default function OrderInfo() {
         // ดึงค่าจากฟิลด์ Order_No ที่มี id="Order_No"
         const orderNo = document.getElementById("Order_No").value;
 
+        // ดึงวันที่และเวลาปัจจุบัน
+        const now = new Date();
+        const formattedDate = now.toISOString(); // รูปแบบวันที่เป็น ISO 8601 เช่น "2024-10-23T08:30:00.000Z"
+
+        // อัปเดตฟิลด์ Od_Upd_Date ในอินพุตให้แสดงวันที่ปัจจุบัน
+        document.getElementById("Od_Upd_Date").value = formattedDate;
+        orderData.Od_Upd_Date = formattedDate;
+
         await editOrders(orderNo);
 
         // ปิดการแก้ไขสิทธิ์
@@ -197,7 +205,7 @@ export default function OrderInfo() {
 
   const handleF10Click = async () => {
     try {
-      // แสดงกล่องยืนยันการลบของข้อมูล
+      // แสดงกล่องยืนยันการลบข้อมูล
       const result = await Swal.fire({
         title: "ยืนยันการลบ?",
         text: "คุณต้องการลบข้อมูลนี้หรือไม่?",
@@ -307,13 +315,12 @@ export default function OrderInfo() {
       ); // เพิ่มปี
 
       // แปลงวันที่ใหม่กลับไปเป็น DD/MM/YYYY
-      const formattedNewDeliveryDate = `${String(
-        newDeliveryDate.getDate()
-      ).padStart(2, "0")}/${String(newDeliveryDate.getMonth() + 1).padStart(
+      const formattedNewDeliveryDate = `${newDeliveryDate.getFullYear()}-${String(
+        newDeliveryDate.getMonth() + 1
+      ).padStart(2, "0")}-${String(newDeliveryDate.getDate()).padStart(
         2,
         "0"
-      )}/${newDeliveryDate.getFullYear()}`;
-
+      )}`;
       // เรียกใช้ฟังก์ชันสำหรับการเปลี่ยนแปลงวันที่
       handleChange(formattedNewDeliveryDate);
     }
@@ -421,13 +428,12 @@ export default function OrderInfo() {
     });
   };
 
-  
   const handPdTargetQty = (newPdTargetQty) => {
     handleInputChange({
       target: { id: "Pd_Target_Qty", value: newPdTargetQty },
     });
   };
-  
+
   const handleQuantityChange = async (newQuantity) => {
     const result = await Swal.fire({
       title: "ยืนยันการเปลี่ยนแปลง",
@@ -437,28 +443,19 @@ export default function OrderInfo() {
       confirmButtonText: "ใช่",
       cancelButtonText: "ไม่",
     });
-  
+
     if (result.isConfirmed) {
       handPdTargetQty(orderData.Quantity); // ตั้งค่าจำนวนเป้าหมายเป็นค่าที่ใหม่
- 
     } else {
       handPdTargetQty(orderData.Pd_Target_Qty); // ตั้งค่าจำนวนเป้าหมายกลับเป็นค่าเดิม
-  
     }
   };
-  
- 
+
   useEffect(() => {
-    if (
-     
-      orderData?.Quantity
-    ) {
+    if (orderData?.Quantity) {
       handleQuantityChange();
     }
-  }, [
-   
-    orderData?.Quantity,
-  ]);
+  }, [orderData?.Quantity]);
 
   return (
     <div className="flex bg-[#E9EFEC] h-[100vh]">
@@ -582,9 +579,13 @@ export default function OrderInfo() {
                         <input
                           disabled
                           id="Request_Delivery"
-                          value={orderData.Request_Delivery || ""}
+                          value={
+                            orderData.Request_Delivery
+                              ? orderData.Request_Delivery.substring(0, 10)
+                              : ""
+                          }
                           onChange={(event) => handleInputChange(event)}
-                          type="text"
+                          type="date"
                           className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                         />
                       ) : (
@@ -593,7 +594,7 @@ export default function OrderInfo() {
                           id="Request_Delivery"
                           value=""
                           onChange={handleInputChange}
-                          type="text"
+                          type="date"
                           className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                         />
                       )}
@@ -608,9 +609,13 @@ export default function OrderInfo() {
                         <input
                           disabled
                           id="Product_Delivery"
-                          value={orderData.Product_Delivery || ""}
+                          value={
+                            orderData.Product_Delivery
+                              ? orderData.Product_Delivery.substring(0, 10)
+                              : ""
+                          }
                           onChange={(event) => handleInputChange(event)}
-                          type="text"
+                          type="date"
                           className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                         />
                       ) : (
@@ -619,7 +624,7 @@ export default function OrderInfo() {
                           value={productDelivery}
                           onChange={(e) => setProductDelivery(e.target.value)}
                           id="Product_Delivery"
-                          type="text"
+                          type="date"
                           className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                         />
                       )}
@@ -634,9 +639,13 @@ export default function OrderInfo() {
                         <input
                           disabled
                           id="Confirm_Delivery"
-                          value={orderData.Confirm_Delivery || ""}
+                          value={
+                            orderData.Confirm_Delivery
+                              ? orderData.Confirm_Delivery.substring(0, 10)
+                              : ""
+                          }
                           onChange={(event) => handleInputChange(event)}
-                          type="text"
+                          type="date"
                           className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                         />
                       ) : (
@@ -645,7 +654,7 @@ export default function OrderInfo() {
                           id="Confirm_Delivery"
                           value={confirmDelivery}
                           onChange={(e) => setconfirmDelivery(e.target.value)}
-                          type="text"
+                          type="date"
                           className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                         />
                       )}
@@ -660,9 +669,13 @@ export default function OrderInfo() {
                         <input
                           disabled
                           id="NAV_Delivery"
-                          value={orderData.NAV_Delivery || ""}
+                          value={
+                            orderData.NAV_Delivery
+                              ? orderData.NAV_Delivery.substring(0, 10)
+                              : ""
+                          }
                           onChange={(event) => handleInputChange(event)}
-                          type="text"
+                          type="date"
                           className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                         />
                       ) : (
@@ -671,7 +684,7 @@ export default function OrderInfo() {
                           id="NAV_Delivery"
                           value={navDelivery}
                           onChange={(e) => setnavDelivery(e.target.value)}
-                          type="text"
+                          type="date"
                           className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                         />
                       )}
@@ -985,15 +998,29 @@ export default function OrderInfo() {
                       )}
                     </div>
                     <div className="w-2/12">
-                      <select
-                        disabled
-                        id="Unit_CD"
-                        className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
-                      >
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                      </select>
+                      {orderData ? (
+                        <select
+                          disabled
+                          id="Unit_CD"
+                          className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
+                        >
+                          <option value={orderData.Unit_CD || ""}>
+                            {orderData.Unit_CD || ""}
+                          </option>
+                          <option value="2">2</option>
+                          <option value="3">3</option>
+                        </select>
+                      ) : (
+                        <select
+                          disabled
+                          id="Unit_CD"
+                          className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
+                        >
+                          <option value="1">1</option>
+                          <option value="2">2</option>
+                          <option value="3">3</option>
+                        </select>
+                      )}
                     </div>
                     <div className="w-3/12">
                       <input
@@ -1009,12 +1036,21 @@ export default function OrderInfo() {
                       Remaining Qty
                     </label>
                     <div className="w-1/2">
-                      <input
-                        disabled
-                        id=""
-                        type="text"
-                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="Remainning_Quantity"
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id=""
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1023,12 +1059,25 @@ export default function OrderInfo() {
                     Sale Instructions
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Sl_Instructions"
-                      type="text"
-                      className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Sl_Instructions"
+                        value={orderData.Sl_Instructions || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Sl_Instructions"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex w-full gap-2 items-center mb-2">
@@ -1036,12 +1085,25 @@ export default function OrderInfo() {
                     Production Instructions
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Pd_Instructions"
-                      type="text"
-                      className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Pd_Instructions"
+                        value={orderData.Pd_Instructions || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Pd_Instructions"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex w-full gap-2 items-center mb-2">
@@ -1049,12 +1111,25 @@ export default function OrderInfo() {
                     Production Remark
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Pd_Remark"
-                      type="text"
-                      className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Pd_Remark"
+                        value={orderData.Pd_Remark || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Pd_Remark"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex w-full gap-2 items-center mb-2">
@@ -1062,12 +1137,25 @@ export default function OrderInfo() {
                     Inspection Remark
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="I_Remark"
-                      type="text"
-                      className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="I_Remark"
+                        value={orderData.I_Remark || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="I_Remark"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -1079,21 +1167,48 @@ export default function OrderInfo() {
                     Sales Group
                   </label>
                   <div className="w-2/5">
-                    <select
-                      disabled
-                      id="Sales_Grp_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
-                    >
-                      {Array.isArray(WorkerData) && WorkerData.length > 0 ? (
-                        WorkergData.map((worker) => (
-                          <option key={worker.WorkG_CD} value={worker.WorkG_CD}>
-                            {worker.WorkG_CD}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="">No Worker Groups Available</option> // แสดงข้อความถ้าไม่มีข้อมูล
-                      )}
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Sales_Grp_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value={orderData.Sales_Grp_CD || ""}>
+                          {orderData.Sales_Grp_CD || ""}
+                        </option>
+                        {Array.isArray(WorkerData) && WorkerData.length > 0 ? (
+                          WorkergData.map((worker) => (
+                            <option
+                              key={worker.WorkG_CD}
+                              value={worker.WorkG_CD}
+                            >
+                              {worker.WorkG_CD}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No Worker Groups Available</option> // แสดงข้อความถ้าไม่มีข้อมูล
+                        )}
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Sales_Grp_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        {Array.isArray(WorkerData) && WorkerData.length > 0 ? (
+                          WorkergData.map((worker) => (
+                            <option
+                              key={worker.WorkG_CD}
+                              value={worker.WorkG_CD}
+                            >
+                              {worker.WorkG_CD}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No Worker Groups Available</option> // แสดงข้อความถ้าไม่มีข้อมูล
+                        )}
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/5">
                     <input
@@ -1109,25 +1224,49 @@ export default function OrderInfo() {
                     Sales Person
                   </label>
                   <div className="w-2/5">
-                    <select
-                      disabled
-                      id="Sales_Person_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
-                    >
-                      {Array.isArray(WorkerData) && WorkerData.length > 0 ? (
-                        WorkerData.map((worker) => (
-                          <option
-                            key={worker.Worker_CD}
-                            value={worker.Worker_CD}
-                          >
-                            {worker.Worker_CD}{" "}
-                            {/* หรือใช้ worker.WorkerName ถ้าต้องการแสดงชื่อ */}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="">No Workers Available</option> // ข้อความเมื่อไม่มีข้อมูล
-                      )}
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Sales_Person_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
+                      >
+                        <option value={orderData.Sales_Person_CD || ""}>
+                          {orderData.Sales_Person_CD || ""}
+                        </option>
+                        {Array.isArray(WorkerData) && WorkerData.length > 0 ? (
+                          WorkerData.map((worker) => (
+                            <option
+                              key={worker.Worker_CD}
+                              value={worker.Worker_CD}
+                            >
+                              {worker.Worker_CD}{" "}
+                              {/* หรือใช้ worker.WorkerName ถ้าต้องการแสดงชื่อ */}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No Workers Available</option> // ข้อความเมื่อไม่มีข้อมูล
+                        )}
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Sales_Person_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
+                      >
+                        {Array.isArray(WorkerData) && WorkerData.length > 0 ? (
+                          WorkerData.map((worker) => (
+                            <option
+                              key={worker.Worker_CD}
+                              value={worker.Worker_CD}
+                            >
+                              {worker.Worker_CD}{" "}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No Workers Available</option> // ข้อความเมื่อไม่มีข้อมูล
+                        )}
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/5">
                     <input
@@ -1143,15 +1282,30 @@ export default function OrderInfo() {
                     Req Category
                   </label>
                   <div className="w-1/12">
-                    <select
-                      disabled
-                      id="Request1_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Request1_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value={orderData.Request1_CD || ""}>
+                          {orderData.Request1_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Request1_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/12">
                     <input
@@ -1162,15 +1316,30 @@ export default function OrderInfo() {
                     />
                   </div>
                   <div className="w-1/12">
-                    <select
-                      disabled
-                      id="Request2_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Request2_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
+                      >
+                        <option value={orderData.Request2_CD || ""}>
+                          {orderData.Request2_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Request2_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/12">
                     <input
@@ -1181,15 +1350,30 @@ export default function OrderInfo() {
                     />
                   </div>
                   <div className="w-1/12">
-                    <select
-                      disabled
-                      id="Request3_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Request3_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value={orderData.Request3_CD || ""}>
+                          {orderData.Request3_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Request3_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/12">
                     <input
@@ -1206,23 +1390,49 @@ export default function OrderInfo() {
                       Material1
                     </label>
                     <div className="w-3/5">
-                      <input
-                        disabled
-                        id="Material1"
-                        type="text"
-                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="Material1"
+                          value={orderData.Material1 || ""}
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="Material1"
+                          value=""
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                   <div className="flex w-full gap-2 mb-2">
                     <label className="text-xs font-semibold w-1/5">H/T</label>
                     <div className="w-4/5">
-                      <input
-                        disabled
-                        id="H_Treatment1"
-                        type="text"
-                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="H_Treatment1"
+                          value={orderData.H_Treatment1 || ""}
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="H_Treatment1"
+                          value=""
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1232,23 +1442,49 @@ export default function OrderInfo() {
                       Material2
                     </label>
                     <div className="w-3/5">
-                      <input
-                        disabled
-                        id="Material2"
-                        type="text"
-                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="Material2"
+                          value={orderData.Material2 || ""}
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="Material2"
+                          value=""
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                   <div className="flex w-1/2 gap-2">
                     <label className="text-xs font-semibold w-1/5">H/T</label>
                     <div className="w-4/5">
-                      <input
-                        disabled
-                        id="H_Treatment2"
-                        type="text"
-                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="H_Treatment2"
+                          value={orderData.H_Treatment2 || ""}
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="H_Treatment2"
+                          value=""
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1258,23 +1494,49 @@ export default function OrderInfo() {
                       Material3
                     </label>
                     <div className="w-3/5">
-                      <input
-                        disabled
-                        id="Material3"
-                        type="text"
-                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="Material3"
+                          value={orderData.H_Treatment2 || ""}
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="Material3"
+                          value=""
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                   <div className="flex w-1/2 gap-2">
                     <label className="text-xs font-semibold w-1/5">H/T</label>
                     <div className="w-4/5">
-                      <input
-                        disabled
-                        id="H_Treatment3"
-                        type="text"
-                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="H_Treatment3"
+                          value={orderData.H_Treatment3 || ""}
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="H_Treatment3"
+                          value=""
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1284,23 +1546,49 @@ export default function OrderInfo() {
                       Material4
                     </label>
                     <div className="w-3/5">
-                      <input
-                        disabled
-                        id="Material4"
-                        type="text"
-                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="Material4"
+                          value={orderData.Material4 || ""}
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="Material4"
+                          value=""
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                   <div className="flex w-1/2 gap-2">
                     <label className="text-xs font-semibold w-1/5">H/T</label>
                     <div className="w-4/5">
-                      <input
-                        disabled
-                        id="H_Treatment4"
-                        type="text"
-                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="H_Treatment4"
+                          value={orderData.H_Treatment4 || ""}
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="H_Treatment4"
+                          value=""
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1310,23 +1598,49 @@ export default function OrderInfo() {
                       Material5
                     </label>
                     <div className="w-3/5">
-                      <input
-                        disabled
-                        id="Material5"
-                        type="text"
-                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="Material5"
+                          value={orderData.Material5 || ""}
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="Material5"
+                          value=""
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                   <div className="flex w-1/2 gap-2">
                     <label className="text-xs font-semibold w-1/5">H/T</label>
                     <div className="w-4/5">
-                      <input
-                        disabled
-                        id="H_Treatment5"
-                        type="text"
-                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="H_Treatment5"
+                          value={orderData.H_Treatment5 || ""}
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="H_Treatment5"
+                          value=""
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1336,15 +1650,29 @@ export default function OrderInfo() {
                       Coating
                     </label>
                     <div className="w-2/6">
-                      <select
-                        disabled
-                        id="Coating_CD"
-                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
-                      >
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                      </select>
+                      {orderData ? (
+                        <select
+                          disabled
+                          id="Coating_CD"
+                          className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                        >
+                          <option value={orderData.Coating_CD || ""}>
+                            {orderData.Coating_CD || ""}
+                          </option>
+                          <option value="2">2</option>
+                          <option value="3">3</option>
+                        </select>
+                      ) : (
+                        <select
+                          disabled
+                          id="Coating_CD"
+                          className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                        >
+                          <option value="1">1</option>
+                          <option value="2">2</option>
+                          <option value="3">3</option>
+                        </select>
+                      )}
                     </div>
                     <div className="w-2/6">
                       <input
@@ -1360,12 +1688,25 @@ export default function OrderInfo() {
                       CT_Detail
                     </label>
                     <div className="w-4/6">
-                      <input
-                        disabled
-                        id="Coating"
-                        type="text"
-                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="Coating"
+                          value={orderData.Coating || ""}
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="Coating"
+                          value=""
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1374,12 +1715,25 @@ export default function OrderInfo() {
                     Tolerance
                   </label>
                   <div className="w-4/5">
-                    <input
-                      disabled
-                      id="Tolerance"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Tolerance"
+                        value={orderData.Tolerance || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Tolerance"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex w-full gap-2 mb-2">
@@ -1388,26 +1742,53 @@ export default function OrderInfo() {
                       Quotation No
                     </label>
                     <div className="w-3/5">
-                      <input
-                        disabled
-                        id="Quote_No"
-                        type="text"
-                        className="bg-[#ffff00] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                      />
+                      {orderData ? (
+                        <input
+                          disabled
+                          id="Quote_No"
+                          value={orderData.Quote_No || ""}
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-[#ffff00] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      ) : (
+                        <input
+                          disabled
+                          id="Quote_No"
+                          value=""
+                          onChange={handleInputChange}
+                          type="text"
+                          className="bg-[#ffff00] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                        />
+                      )}
                     </div>
                   </div>
                   <div className="flex w-6/12 gap-2 items-center">
                     <label className="text-xs font-semibold w-1/5">CAT</label>
                     <div className="w-2/5">
-                      <select
-                        disabled
-                        id="Quote_CD"
-                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
-                      >
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                      </select>
+                      {orderData ? (
+                        <select
+                          disabled
+                          id="Quote_CD"
+                          className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
+                        >
+                          <option value={orderData.Quote_CD || ""}>
+                            {orderData.Quote_CD || ""}
+                          </option>
+                          <option value="2">2</option>
+                          <option value="3">3</option>
+                        </select>
+                      ) : (
+                        <select
+                          disabled
+                          id="Quote_CD"
+                          className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
+                        >
+                          <option value="1">1</option>
+                          <option value="2">2</option>
+                          <option value="3">3</option>
+                        </select>
+                      )}
                     </div>
                     <div className="w-2/5">
                       <input
@@ -1422,15 +1803,30 @@ export default function OrderInfo() {
                 <div className="flex w-full gap-2 items-center mb-2">
                   <label className="text-xs font-semibold w-1/5">Item</label>
                   <div className="w-2/5">
-                    <select
-                      disabled
-                      id="Item1_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Item1_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
+                      >
+                        <option value={orderData.Item1_CD || ""}>
+                          {orderData.Item1_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Item1_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/5">
                     <input
@@ -1446,23 +1842,49 @@ export default function OrderInfo() {
                     Customer Materail
                   </label>
                   <div className="w-9/12">
-                    <input
-                      disabled
-                      id="Custom_Material"
-                      type="text"
-                      className="bg-[#ff99cc] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Custom_Material"
+                        value={orderData.Custom_Material || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-[#ff99cc] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Custom_Material"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-[#ff99cc] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex w-full items-center mb-2">
                   <label className="text-xs font-semibold w-1/5">PO No</label>
                   <div className="w-4/5">
-                    <input
-                      disabled
-                      id="Od_No_of_Custom"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Od_No_of_Custom"
+                        value={orderData.Od_No_of_Custom || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Od_No_of_Custom"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex w-full items-center gap-2 mb-2">
@@ -1506,12 +1928,25 @@ export default function OrderInfo() {
                     Production_Received
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Pd_Received_Date"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Pd_Received_Date"
+                        value={orderData.Pd_Received_Date || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Pd_Received_Date"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex w-full items-center gap-2 mb-2">
@@ -1519,12 +1954,25 @@ export default function OrderInfo() {
                     Production_Completed
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Pd_Complete_Date"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Pd_Complete_Date"
+                        value={orderData.Pd_Complete_Date || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Pd_Complete_Date"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex w-full items-center gap-2 mb-2">
@@ -1532,12 +1980,25 @@ export default function OrderInfo() {
                     QC_Completed
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="I_Completed_Date"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="I_Completed_Date"
+                        value={orderData.I_Completed_Date || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="I_Completed_Date"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex w-full items-center gap-2 mb-2">
@@ -1545,12 +2006,25 @@ export default function OrderInfo() {
                     Shipment_Date
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Shipment_Date"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Shipment_Date"
+                        value={orderData.Shipment_Date || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Shipment_Date"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex w-full items-center gap-2 mb-2">
@@ -1558,12 +2032,25 @@ export default function OrderInfo() {
                     Production_Calc_Date
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Pd_Calc_Date"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Pd_Calc_Date"
+                        value={orderData.Pd_Calc_Date || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Pd_Calc_Date"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex w-full items-center gap-2 mb-2">
@@ -1571,12 +2058,25 @@ export default function OrderInfo() {
                     Calc_processing_Data
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Calc_Process_Date"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Calc_Process_Date"
+                        value={orderData.Calc_Process_Date || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Calc_Process_Date"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex w-full items-center gap-2 mb-2">
@@ -1584,12 +2084,25 @@ export default function OrderInfo() {
                     Order_Modify_Date
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Od_Upd_Date"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Od_Upd_Date"
+                        value={orderData.Od_Upd_Date || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Od_Upd_Date"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -1601,25 +2114,50 @@ export default function OrderInfo() {
                     Customer
                   </label>
                   <div className="w-2/6">
-                    <select
-                      disabled
-                      id="Customer_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
-                    >
-                      {Array.isArray(CustomerData) &&
-                      CustomerData.length > 0 ? (
-                        CustomerData.map((customer) => (
-                          <option
-                            key={customer.Customer_CD}
-                            value={customer.Customer_CD}
-                          >
-                            {customer.Customer_CD}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="">No Customers Available</option> // ข้อความเมื่อไม่มีข้อมูล
-                      )}
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Customer_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
+                      >
+                        <option value={orderData.Customer_CD || ""}>
+                          {orderData.Customer_CD || ""}
+                        </option>
+                        {Array.isArray(CustomerData) &&
+                        CustomerData.length > 0 ? (
+                          CustomerData.map((customer) => (
+                            <option
+                              key={customer.Customer_CD}
+                              value={customer.Customer_CD}
+                            >
+                              {customer.Customer_CD}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No Customers Available</option> // ข้อความเมื่อไม่มีข้อมูล
+                        )}
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Customer_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
+                      >
+                        {Array.isArray(CustomerData) &&
+                        CustomerData.length > 0 ? (
+                          CustomerData.map((customer) => (
+                            <option
+                              key={customer.Customer_CD}
+                              value={customer.Customer_CD}
+                            >
+                              {customer.Customer_CD}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No Customers Available</option> // ข้อความเมื่อไม่มีข้อมูล
+                        )}
+                      </select>
+                    )}
                   </div>
 
                   <div className="w-2/6">
@@ -1649,15 +2187,30 @@ export default function OrderInfo() {
                     Delivery Category
                   </label>
                   <div className="w-2/6">
-                    <select
-                      disabled
-                      id="Supply_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Supply_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
+                      >
+                        <option value={orderData.Supply_CD || ""}>
+                          {orderData.Supply_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Supply_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/6">
                     <input
@@ -1673,15 +2226,30 @@ export default function OrderInfo() {
                     Delivery Destination
                   </label>
                   <div className="w-2/6">
-                    <select
-                      disabled
-                      id="Destination_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Destination_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
+                      >
+                        <option value={orderData.Destination_CD || ""}>
+                          {orderData.Destination_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Destination_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/6">
                     <input
@@ -1697,15 +2265,30 @@ export default function OrderInfo() {
                     Contract Document
                   </label>
                   <div className="w-2/6">
-                    <select
-                      disabled
-                      id="Contract_Docu_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Contract_Docu_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
+                      >
+                        <option value={orderData.Contract_Docu_CD || ""}>
+                          {orderData.Contract_Docu_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Contract_Docu_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/6">
                     <input
@@ -1721,14 +2304,28 @@ export default function OrderInfo() {
                     Unit Price
                   </label>
                   <div className="w-2/6">
-                    <select
-                      id="Unit_Price"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        id="Unit_Price"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
+                      >
+                        <option value={orderData.Unit_Price || ""}>
+                          {orderData.Unit_Price || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        id="Unit_Price"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/6 flex gap-1">
                     <div className="w-2/5">
@@ -1754,12 +2351,25 @@ export default function OrderInfo() {
                     Order No of Production Split
                   </label>
                   <div className="w-3/6">
-                    <input
-                      disabled
-                      id="Od_No_of_Pd_Split"
-                      type="text"
-                      className="bg-[#ffff00] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Od_No_of_Pd_Split"
+                        value={orderData.Od_No_of_Pd_Split || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-[#ffff00] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Od_No_of_Pd_Split"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-[#ffff00] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                   <div className="w-1/6">
                     <button className="bg-blue-500 text-white w-full py-[5px] rounded-md hover:bg-blue-700 text-[12px] flex justify-center items-center gap-2">
@@ -1772,15 +2382,30 @@ export default function OrderInfo() {
                     Order Controller Person
                   </label>
                   <div className="w-2/6">
-                    <select
-                      disabled
-                      id="Od_Ctl_Person_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Od_Ctl_Person_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value={orderData.Od_Ctl_Person_CD || ""}>
+                          {orderData.Od_Ctl_Person_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Od_Ctl_Person_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/6">
                     <input
@@ -1796,15 +2421,30 @@ export default function OrderInfo() {
                     Order Register Person
                   </label>
                   <div className="w-2/6">
-                    <select
-                      disabled
-                      id="Od_Reg_Person_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Od_Reg_Person_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value={orderData.Od_Reg_Person_CD || ""}>
+                          {orderData.Od_Reg_Person_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Od_Reg_Person_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/6">
                     <input
@@ -1820,15 +2460,30 @@ export default function OrderInfo() {
                     Order Update Person
                   </label>
                   <div className="w-2/6">
-                    <select
-                      disabled
-                      id="Od_Upd_Person_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Od_Upd_Person_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value={orderData.Od_Upd_Person_CD || ""}>
+                          {orderData.Od_Upd_Person_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Od_Upd_Person_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/6">
                     <input
@@ -1844,15 +2499,30 @@ export default function OrderInfo() {
                     Specific Item
                   </label>
                   <div className="w-2/6">
-                    <select
-                      disabled
-                      id="Specific_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Specific_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value={orderData.Specific_CD || ""}>
+                          {orderData.Specific_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Specific_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/6">
                     <input
@@ -1868,15 +2538,30 @@ export default function OrderInfo() {
                     Order Progress CAT
                   </label>
                   <div className="w-2/6">
-                    <select
-                      disabled
-                      id="Od_Progress_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Od_Progress_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value={orderData.Od_Progress_CD || ""}>
+                          {orderData.Od_Progress_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Od_Progress_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/6">
                     <input
@@ -1892,15 +2577,30 @@ export default function OrderInfo() {
                     Delivery Date CAT
                   </label>
                   <div className="w-2/6">
-                    <select
-                      disabled
-                      id="Delivery_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Delivery_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value={orderData.Delivery_CD || ""}>
+                          {orderData.Delivery_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Delivery_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/6">
                     <input
@@ -1916,15 +2616,30 @@ export default function OrderInfo() {
                     Schedule CAT
                   </label>
                   <div className="w-2/6">
-                    <select
-                      disabled
-                      id="Schedule_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Schedule_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value={orderData.Schedule_CD || ""}>
+                          {orderData.Schedule_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Schedule_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/6">
                     <input
@@ -1940,15 +2655,30 @@ export default function OrderInfo() {
                     Target CAT
                   </label>
                   <div className="w-2/6">
-                    <select
-                      disabled
-                      id="Target_CD"
-                      className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
-                    >
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                      <option value="3">3</option>
-                    </select>
+                    {orderData ? (
+                      <select
+                        disabled
+                        id="Target_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value={orderData.Target_CD || ""}>
+                          {orderData.Target_CD || ""}
+                        </option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        id="Target_CD"
+                        className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
+                      >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                      </select>
+                    )}
                   </div>
                   <div className="w-2/6">
                     <input
@@ -1990,12 +2720,25 @@ export default function OrderInfo() {
                     Pruduction Completed Qty
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Pd_Complete_Qty"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Pd_Complete_Qty"
+                        value={orderData.Pd_Complete_Qty || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Pd_Complete_Qty"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2 items-center mb-2">
@@ -2003,12 +2746,25 @@ export default function OrderInfo() {
                     Inspection Completed Qty
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="I_Complete_Qty"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="I_Complete_Qty"
+                        value={orderData.I_Complete_Qty || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="I_Complete_Qty"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2 items-center mb-2">
@@ -2016,12 +2772,25 @@ export default function OrderInfo() {
                     Delivery Qty
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Shipment_Qty"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Shipment_Qty"
+                        value={orderData.Shipment_Qty || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Shipment_Qty"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2 items-center mb-2">
@@ -2029,12 +2798,25 @@ export default function OrderInfo() {
                     Production Split Qty
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Pd_Split_Qty"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Pd_Split_Qty"
+                        value={orderData.Pd_Split_Qty || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Pd_Split_Qty"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2 items-center mb-2">
@@ -2042,23 +2824,49 @@ export default function OrderInfo() {
                     Production Calculation Qty
                   </label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="Pd_Calc_Qty"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="Pd_Calc_Qty"
+                        value={orderData.Pd_Calc_Qty || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="Pd_Calc_Qty"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2 items-center mb-2">
                   <label className="text-xs font-semibold w-2/6">NG Qty</label>
                   <div className="w-4/6">
-                    <input
-                      disabled
-                      id="NG_Qty"
-                      type="text"
-                      className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                    />
+                    {orderData ? (
+                      <input
+                        disabled
+                        id="NG_Qty"
+                        value={orderData.NG_Qty || ""}
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    ) : (
+                      <input
+                        disabled
+                        id="NG_Qty"
+                        value=""
+                        onChange={handleInputChange}
+                        type="text"
+                        className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+                      />
+                    )}
                   </div>
                 </div>
               </div>
