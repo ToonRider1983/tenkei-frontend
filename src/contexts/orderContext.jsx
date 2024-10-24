@@ -11,7 +11,7 @@ export default function OrderContextProvider({ children }) {
     // ฟังก์ชันสำหรับดึงข้อมูลการสั่งซื้อทั้งหมด
     const fetchOrders = async () => {
         try {
-            const response = await axios.get("/order/td_orders");
+            const response = await axios.get("/order/td-orders");
             setOrderData(response.data); // อัปเดตข้อมูลที่ได้จาก API
             console.log(response.data);
             return response; // คืนค่า response
@@ -23,7 +23,7 @@ export default function OrderContextProvider({ children }) {
 
     const fetchWorkerGroups = async () => { 
         try {
-            const response = await axios.get("/order/workerg"); // เปลี่ยนเป็น endpoint ที่คุณสร้าง
+            const response = await axios.get("/order/workerG"); // เปลี่ยนเป็น endpoint ที่คุณสร้าง
             setWorkergData(response.data); // อัปเดตข้อมูลที่ได้จาก API
             console.log(response.data);
             return response; // คืนค่า response
@@ -59,7 +59,7 @@ export default function OrderContextProvider({ children }) {
     // ฟังก์ชันสำหรับค้นหาข้อมูลการสั่งซื้อด้วยหมายเลข
     const searchOrderData = async (orderNo) => {
         try {
-            const response = await axios.post("/order/search_order", { Order_No: orderNo  });
+            const response = await axios.post("/order/search-order", { Order_No: orderNo  });
             setOrderData(response.data.data.order); // อัปเดตข้อมูลที่ได้จาก API
         } catch (error) {
             console.error("Error fetching order data:", error);
@@ -68,7 +68,7 @@ export default function OrderContextProvider({ children }) {
 
     const editOrders = async () => {
         try {
-           const response = await axios.put('/order/editOrder', orderData); 
+           const response = await axios.put('/order/edit-order', orderData); 
            console.log('Order updated successfully:', response.data);
            return response.data;
         } catch (error) {
@@ -79,7 +79,7 @@ export default function OrderContextProvider({ children }) {
 
     const deleteOrder = async (orderNo) => {
         try {   
-            const response = await axios.delete(`/order/deleteOrder`, {
+            const response = await axios.delete(`/order/delete-order`, {
                 data: { Order_No: orderData.Order_No } // ส่งค่า Order_No ใน body
             });
     
