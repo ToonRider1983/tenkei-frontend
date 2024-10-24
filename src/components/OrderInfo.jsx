@@ -201,7 +201,7 @@ export default function OrderInfo() {
 
   const handleF10Click = async () => {
     try {
-      // แสดงกล่องยืนยันการลบข้อมูล
+      // แสดงกล่องยืนยันการลบของข้อมูล
       const result = await Swal.fire({
         title: "ยืนยันการลบ?",
         text: "คุณต้องการลบข้อมูลนี้หรือไม่?",
