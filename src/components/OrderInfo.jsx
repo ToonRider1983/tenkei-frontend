@@ -9,18 +9,10 @@ export default function OrderInfo() {
   const [searchOrderNo, setSearchOrderNo] = useState("");
   const [OrderNo, setOrderNo] = useState("");
   const [autoYearChange, setAutoYearChange] = useState(false);
-  const [productDelivery, setProductDelivery] = useState("");
-  const [confirmDelivery, setconfirmDelivery] = useState("");
-  const [navDelivery, setnavDelivery] = useState("");
-  const [navName, setNavName] = useState("");
-  const [productName, setProductName] = useState("");
-  const [navSize, setNavSize] = useState("");
-  const [productSize, setProductSize] = useState("");
   const [customerDraw, setCustomerDraw] = useState("");
   const [companyDraw, setCompanyDraw] = useState("");
-  const [productDraw, setProductDraw] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [pdTargetQty, setPdTargetQty] = useState("");
+
+ 
 
   const handleAutoYearChange = (event) => {
     setAutoYearChange(event.target.checked);
@@ -34,9 +26,9 @@ export default function OrderInfo() {
     searchOrderData,
     fetchOrders,
     editOrders,
-    fetchWorkerGroups,
     deleteOrder,
     setOrderData,
+    createOrder,
   } = useOrder();
 
   // ฟังก์ชันสำหรับตรวจสอบว่าฟิลด์ว่างหรือไม่
@@ -161,9 +153,13 @@ export default function OrderInfo() {
         return; // ถ้าไม่ถูกกรอกให้หยุดทำงาน
       }
 
-      // แสดงกล่องยืนยัน
+       // ตรวจสอบว่ามี Order_No นี้อยู่ในฐานข้อมูลหรือไม่
+       const orderExists = await searchOrderData(orderData.Order_No);
+
+       if (orderExists) {
+      
       const result = await Swal.fire({
-        title: "ต้องการบันทึกข้อมูลหรือไม่",
+        title: "ต้องการแก้ไขบันทึกข้อมูลหรือไม่",
         icon: "question",
         showCancelButton: true,
         confirmButtonText: "ใช่",
@@ -189,7 +185,36 @@ export default function OrderInfo() {
 
         // ปิดปุ่ม F9
         document.getElementById("saveButton").disabled = true;
+      } }   else { 
+
+        const result = await Swal.fire({
+        title: "ต้องการบันทึกข้อมูลหรือไม่",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "ใช่",
+        cancelButtonText: "ไม่ใช่",
+      });
+
+      if (result.isConfirmed) {
+  
+
+        // ดึงวันที่และเวลาปัจจุบัน
+        const now = new Date();
+        const formattedDate = now.toISOString(); // รูปแบบวันที่เป็น ISO 8601 เช่น "2024-10-23T08:30:00.000Z"
+
+        // อัปเดตฟิลด์ Od_Upd_Date ในอินพุตให้แสดงวันที่ปัจจุบัน
+        document.getElementById("Od_Upd_Date").value = formattedDate;
+        orderData.Od_Upd_Date = formattedDate;
+
+        await createOrder();
+
+        // ปิดการแก้ไขสิทธิ์
+        editPermission(false);
+
+        // ปิดปุ่ม F9
+        document.getElementById("saveButton").disabled = true;
       }
+      } 
     } catch (error) {
       console.error("Error in handleF9Click:", error);
       Swal.fire({
@@ -265,13 +290,17 @@ export default function OrderInfo() {
   };
   
   const handleInputChange = (event) => {
-    const { id, value } = event.target;
+    const { id, value, type, checked } = event.target;
 
     setOrderData((prevOrderData) => ({
-      ...prevOrderData,
-      [id]: value === "" ? null : value,
+        ...prevOrderData,
+        [id]: type === "checkbox" ? checked : value === "" ? null : value,
     }));
-  };
+
+    if (id === "Order_No") {
+      searchOrderData(value); 
+  }
+};
 
   const handleRequestDeliveryChange = (newDeliveryDate) => {
     handleInputChange({
@@ -493,7 +522,7 @@ export default function OrderInfo() {
             <input
               disabled
               id="Order_No"
-              value=""
+              value={orderData?.Order_No || ""}
               onChange={handleInputChange}
               type="text"
               className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1"
@@ -527,6 +556,8 @@ export default function OrderInfo() {
           ) : (
             <select
               id="Product_Grp_CD"
+              value={orderData?.Product_Grp_CD || ""}
+              onChange={handleInputChange}
               className="border-2 border-gray-500 rounded-md bg-white px-2 w-full"
             >
               {Array.isArray(WorkerData) && WorkerData.length > 0 ? (
@@ -594,8 +625,12 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="Request_Delivery"
-                      value=""
-                      onChange={handleInputChange}
+                      value={
+                        orderData?.Request_Delivery
+                          ? orderData.Request_Delivery.substring(0, 10)
+                          : ""
+                      }
+                      onChange={(event) => handleInputChange(event)}
                       type="date"
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
@@ -623,8 +658,12 @@ export default function OrderInfo() {
                   ) : (
                     <input
                       disabled
-                      value={productDelivery}
-                      onChange={(e) => setProductDelivery(e.target.value)}
+                      value={
+                        orderData?.Product_Delivery
+                          ? orderData.Product_Delivery.substring(0, 10)
+                          : ""
+                      }
+                      onChange={(event) => handleInputChange(event)}
                       id="Product_Delivery"
                       type="date"
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -654,8 +693,12 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="Confirm_Delivery"
-                      value={confirmDelivery}
-                      onChange={(e) => setconfirmDelivery(e.target.value)}
+                      value={
+                        orderData?.Confirm_Delivery
+                          ? orderData.Confirm_Delivery.substring(0, 10)
+                          : ""
+                      }
+                      onChange={(event) => handleInputChange(event)}
                       type="date"
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
@@ -684,8 +727,12 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="NAV_Delivery"
-                      value={navDelivery}
-                      onChange={(e) => setnavDelivery(e.target.value)}
+                      value={
+                        orderData?.NAV_Delivery
+                          ? orderData.NAV_Delivery.substring(0, 10)
+                          : ""
+                      }
+                      onChange={(event) => handleInputChange(event)}
                       type="date"
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
@@ -696,67 +743,145 @@ export default function OrderInfo() {
 
             <div className="w-5/12 content-around">
               <div className="flex items-center mb-3 gap-2">
+              {orderData ? (
                 <input
                   disabled
                   id="Od_Pending"
+                  value={!!orderData.Od_Pending || ""}
+                  onChange={handleInputChange}
                   type="checkbox"
                   className="w-6 h-6"
                 />
+              ) : (
+                <input
+                disabled
+                id="Od_Pending"
+                value={!!orderData?.Od_Pending || ""}
+                onChange={handleInputChange}
+                type="checkbox"
+                className="w-6 h-6"
+              />
+              )}
                 <label className="w-3/5 text-xs font-semibold">
                   Order Pending
                 </label>
               </div>
               <div className="flex items-center mb-3 gap-2">
+              {orderData ? (
                 <input
                   disabled
                   id="Temp_Shipment"
+                  value={!!orderData.Temp_Shipment || ""}
+                  onChange={handleInputChange}
                   type="checkbox"
                   className="w-6 h-6"
                 />
+              ) : (
+                <input
+                disabled
+                id="Temp_Shipment"
+                value={!!orderData?.Temp_Shipment || ""}
+                onChange={handleInputChange}
+                type="checkbox"
+                className="w-6 h-6"
+              />
+              )}
                 <label className="w-3/5 text-xs font-semibold">
                   Temporary Shipment
                 </label>
               </div>
               <div className="flex items-center mb-3 gap-2">
+              {orderData ? (
                 <input
                   disabled
                   id="Unreceived"
+                  value={!!orderData.Unreceived || ""}
+                  onChange={handleInputChange}
                   type="checkbox"
                   className="w-6 h-6"
                 />
+              ) : (
+                <input
+                disabled
+                id="Unreceived"
+                value={!!orderData?.Unreceived || ""}
+                onChange={handleInputChange}
+                type="checkbox"
+                className="w-6 h-6"
+              />
+              )}
                 <label className="w-3/5 text-xs font-semibold">
                   Unreceived
                 </label>
               </div>
               <div className="flex items-center mb-3 gap-2">
+              {orderData ? (
                 <input
                   disabled
                   id="Od_CAT1"
+                  value={!!orderData.Od_CAT1 || ""}
+                  onChange={handleInputChange}
                   type="checkbox"
                   className="w-6 h-6"
                 />
+              ) : (
+                <input
+                disabled
+                id="Od_CAT1"
+                value={!!orderData?.Od_CAT1 || ""}
+                onChange={handleInputChange}
+                type="checkbox"
+                className="w-6 h-6"
+              />
+              )}
                 <label className="w-3/5 text-xs font-semibold">
                   Order Identification1
                 </label>
               </div>
               <div className="flex items-center mb-3 gap-2">
+              {orderData ? (
                 <input
                   disabled
                   id="Od_CAT2"
+                  value={!!orderData.Od_CAT2 || ""}
+                  onChange={handleInputChange}
                   type="checkbox"
                   className="w-6 h-6"
                 />
+              ) : (
+                <input
+                disabled
+                id="Od_CAT2"
+                value={!!orderData?.Od_CAT2 || ""}
+                onChange={handleInputChange}
+                type="checkbox"
+                className="w-6 h-6"
+              />
+              )}
                 <label className="w-3/5 text-xs font-semibold">
                   Order Identification2
                 </label>
               </div>
               <div className="flex items-center gap-2">
+              {orderData ? (
                 <input
                   disabled
                   id="Od_CAT3"
+                  value={!!orderData.Od_CAT3 || ""}
+                  onChange={handleInputChange}
                   type="checkbox"
                   className="w-6 h-6"
                 />
+              ) : (
+                <input
+                disabled
+                id="Od_CAT3"
+                value={!!orderData?.Od_CAT3 || ""}
+                onChange={handleInputChange}
+                type="checkbox"
+                className="w-6 h-6"
+              />
+              )}
                 <label className="w-3/5 text-xs font-semibold">
                   Order Identification3
                 </label>
@@ -783,8 +908,8 @@ export default function OrderInfo() {
                     disabled
                     id="NAV_Name"
                     type="text"
-                    value={navName}
-                    onChange={(e) => setNavName(e.target.value)}
+                    value={orderData?.NAV_Name || ""}
+                    onChange={handleInputChange}
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                   />
                 )}
@@ -817,8 +942,8 @@ export default function OrderInfo() {
                     disabled
                     id="Product_Name"
                     type="text"
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
+                    value={orderData?.Product_Name || ""}
+                    onChange={(event) => handleInputChange(event)}
                     className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                   />
                 )}
@@ -843,7 +968,7 @@ export default function OrderInfo() {
                     disabled
                     id="NAV_Size"
                     type="text"
-                    value={navSize}
+                    value={orderData?.NAV_Size || ""}
                     onChange={handleInputChange}
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                   />
@@ -877,8 +1002,8 @@ export default function OrderInfo() {
                     disabled
                     id="Product_Size"
                     type="text"
-                    value={productSize}
-                    onChange={handleInputChange}
+                    value={orderData?.Product_Size || ""}
+                    onChange={(event) => handleInputChange(event)}
                     className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                   />
                 )}
@@ -904,8 +1029,8 @@ export default function OrderInfo() {
                       <input
                         disabled
                         id="Customer_Draw"
-                        value={customerDraw}
-                        onChange={(e) => setCustomerDraw(e.target.value)}
+                        value={orderData?.Customer_Draw || ""}
+                        onChange={handleInputChange}
                         type="text"
                         className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                       />
@@ -930,8 +1055,8 @@ export default function OrderInfo() {
                       <input
                         disabled
                         id="Company_Draw"
-                        value={companyDraw}
-                        onChange={(e) => setCompanyDraw(e.target.value)}
+                        value={orderData?.Company_Draw || ""}
+                        onChange={handleInputChange}
                         type="text"
                         className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                       />
@@ -966,8 +1091,8 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Product_Draw"
-                    value={productDraw}
-                    onChange={(e) => setProductDraw(e.target.value)}
+                    value={orderData?.Product_Draw || ""}
+                    onChange={(event) => handleInputChange(event)}
                     type="text"
                     className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                   />
@@ -991,8 +1116,8 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="Quantity"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
+                      value={orderData?.Quantity || ""}
+                      onChange={handleInputChange}
                       type="text"
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
@@ -1003,6 +1128,8 @@ export default function OrderInfo() {
                     <select
                       disabled
                       id="Unit_CD"
+                      value={orderData.Unit_CD || ""}
+                      onChange={handleInputChange}
                       className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
                     >
                       <option value={orderData.Unit_CD || ""}>
@@ -1015,6 +1142,8 @@ export default function OrderInfo() {
                     <select
                       disabled
                       id="Unit_CD"
+                      value={orderData?.Unit_CD || ""}
+                      onChange={handleInputChange}
                       className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
                     >
                       <option value="1">1</option>
@@ -1073,7 +1202,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Sl_Instructions"
-                    value=""
+                    value={orderData?.Sl_Instructions || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1099,7 +1228,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Pd_Instructions"
-                    value=""
+                    value={orderData?.Pd_Instructions || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1125,7 +1254,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Pd_Remark"
-                    value=""
+                    value={orderData?.Pd_Remark || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1151,7 +1280,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="I_Remark"
-                    value=""
+                    value={orderData?.I_Remark || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1170,6 +1299,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Sales_Grp_CD"
+                    value={orderData.Sales_Grp_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value={orderData.Sales_Grp_CD || ""}>
@@ -1189,6 +1320,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Sales_Grp_CD"
+                    value={orderData?.Sales_Grp_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     {Array.isArray(WorkerData) && WorkerData.length > 0 ? (
@@ -1221,6 +1354,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Sales_Person_CD"
+                    value={orderData.Sales_Person_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
                   >
                     <option value={orderData.Sales_Person_CD || ""}>
@@ -1241,6 +1376,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Sales_Person_CD"
+                    value={orderData?.Sales_Person_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
                   >
                     {Array.isArray(WorkerData) && WorkerData.length > 0 ? (
@@ -1273,6 +1410,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Request1_CD"
+                    value={orderData.Request1_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value={orderData.Request1_CD || ""}>
@@ -1286,6 +1425,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Request1_CD"
+                    value={orderData?.Request1_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value="1">1</option>
@@ -1307,6 +1448,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Request2_CD"
+                    value={orderData.Request2_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
                   >
                     <option value={orderData.Request2_CD || ""}>
@@ -1320,6 +1463,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Request2_CD"
+                    value={orderData?.Request2_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
                   >
                     <option value="1">1</option>
@@ -1341,6 +1486,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Request3_CD"
+                    value={orderData.Request3_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value={orderData.Request3_CD || ""}>
@@ -1354,6 +1501,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Request3_CD"
+                    value={orderData?.Request3_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value="1">1</option>
@@ -1388,7 +1537,7 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="Material1"
-                      value=""
+                      value={orderData?.Material1 || ""}
                       onChange={handleInputChange}
                       type="text"
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1412,7 +1561,7 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="H_Treatment1"
-                      value=""
+                      value={orderData?.H_Treatment1 || ""}
                       onChange={handleInputChange}
                       type="text"
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1438,7 +1587,7 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="Material2"
-                      value=""
+                      value={orderData?.Material2 || ""}
                       onChange={handleInputChange}
                       type="text"
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1462,7 +1611,7 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="H_Treatment2"
-                      value=""
+                      value={orderData?.H_Treatment2 || ""}
                       onChange={handleInputChange}
                       type="text"
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1479,7 +1628,7 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="Material3"
-                      value={orderData.H_Treatment2 || ""}
+                      value={orderData.Material3 || ""}
                       onChange={handleInputChange}
                       type="text"
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1488,7 +1637,7 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="Material3"
-                      value=""
+                      value={orderData?.Material3 || ""}
                       onChange={handleInputChange}
                       type="text"
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1512,7 +1661,7 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="H_Treatment3"
-                      value=""
+                      value={orderData?.H_Treatment3 || ""}
                       onChange={handleInputChange}
                       type="text"
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1538,7 +1687,7 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="Material4"
-                      value=""
+                      value={orderData?.Material4 || ""}
                       onChange={handleInputChange}
                       type="text"
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1562,7 +1711,7 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="H_Treatment4"
-                      value=""
+                      value={orderData?.H_Treatment4 || ""}
                       onChange={handleInputChange}
                       type="text"
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1588,7 +1737,7 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="Material5"
-                      value=""
+                      value={orderData?.Material5 || ""}
                       onChange={handleInputChange}
                       type="text"
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1612,7 +1761,7 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="H_Treatment5"
-                      value=""
+                      value={orderData?.H_Treatment5 || ""}
                       onChange={handleInputChange}
                       type="text"
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1629,6 +1778,8 @@ export default function OrderInfo() {
                     <select
                       disabled
                       id="Coating_CD"
+                      value={orderData.Coating_CD || ""}
+                      onChange={handleInputChange}
                       className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                     >
                       <option value={orderData.Coating_CD || ""}>
@@ -1641,6 +1792,8 @@ export default function OrderInfo() {
                     <select
                       disabled
                       id="Coating_CD"
+                      value={orderData?.Coating_CD || ""}
+                      onChange={handleInputChange}
                       className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                     >
                       <option value="1">1</option>
@@ -1674,7 +1827,7 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="Coating"
-                      value=""
+                      value={orderData?.Coating || ""}
                       onChange={handleInputChange}
                       type="text"
                       className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1699,7 +1852,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Tolerance"
-                    value=""
+                    value={orderData?.Tolerance || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1726,7 +1879,7 @@ export default function OrderInfo() {
                     <input
                       disabled
                       id="Quote_No"
-                      value=""
+                      value={orderData?.Quote_No || ""}
                       onChange={handleInputChange}
                       type="text"
                       className="bg-[#ffff00] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1741,6 +1894,8 @@ export default function OrderInfo() {
                     <select
                       disabled
                       id="Quote_CD"
+                      value={orderData.Quote_CD || ""}
+                      onChange={handleInputChange}
                       className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
                     >
                       <option value={orderData.Quote_CD || ""}>
@@ -1753,6 +1908,8 @@ export default function OrderInfo() {
                     <select
                       disabled
                       id="Quote_CD"
+                      value={orderData?.Quote_CD || ""}
+                      onChange={handleInputChange}
                       className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
                     >
                       <option value="1">1</option>
@@ -1778,6 +1935,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Item1_CD"
+                    value={orderData.Item1_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
                   >
                     <option value={orderData.Item1_CD || ""}>
@@ -1791,6 +1950,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Item1_CD"
+                    value={orderData?.Item1_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
                   >
                     <option value="1">1</option>
@@ -1826,7 +1987,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Custom_Material"
-                    value=""
+                    value={orderData?.Custom_Material || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-[#ff99cc] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1850,7 +2011,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Od_No_of_Custom"
-                    value=""
+                    value={orderData?.Od_No_of_Custom || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1912,7 +2073,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Pd_Received_Date"
-                    value=""
+                    value={orderData?.Pd_Received_Date || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1938,7 +2099,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Pd_Complete_Date"
-                    value=""
+                    value={orderData?.Pd_Complete_Date || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1964,7 +2125,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="I_Completed_Date"
-                    value=""
+                    value={orderData?.I_Completed_Date || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -1990,7 +2151,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Shipment_Date"
-                    value=""
+                    value={orderData?.Shipment_Date || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -2016,7 +2177,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Pd_Calc_Date"
-                    value=""
+                    value={orderData?.Pd_Calc_Date || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -2042,7 +2203,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Calc_Process_Date"
-                    value=""
+                    value={orderData?.Calc_Process_Date || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -2068,7 +2229,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Od_Upd_Date"
-                    value=""
+                    value={orderData?.Od_Upd_Date || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -2087,6 +2248,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Customer_CD"
+                    value={orderData.Customer_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
                   >
                     <option value={orderData.Customer_CD || ""}>
@@ -2109,6 +2272,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Customer_CD"
+                    value={orderData?.Customer_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-white w-full"
                   >
                     {Array.isArray(CustomerData) && CustomerData.length > 0 ? (
@@ -2156,6 +2321,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Supply_CD"
+                    value={orderData.Supply_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
                   >
                     <option value={orderData.Supply_CD || ""}>
@@ -2169,6 +2336,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Supply_CD"
+                    value={orderData?.Supply_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
                   >
                     <option value="1">1</option>
@@ -2195,6 +2364,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Destination_CD"
+                    value={orderData.Destination_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
                   >
                     <option value={orderData.Destination_CD || ""}>
@@ -2208,6 +2379,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Destination_CD"
+                    value={orderData?.Destination_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
                   >
                     <option value="1">1</option>
@@ -2234,6 +2407,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Contract_Docu_CD"
+                    value={orderData.Contract_Docu_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
                   >
                     <option value={orderData.Contract_Docu_CD || ""}>
@@ -2247,6 +2422,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Contract_Docu_CD"
+                    value={orderData?.Contract_Docu_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
                   >
                     <option value="1">1</option>
@@ -2270,6 +2447,8 @@ export default function OrderInfo() {
                 {orderData ? (
                   <select
                     id="Unit_Price"
+                    value={orderData.Unit_Price || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
                   >
                     <option value={orderData.Unit_Price || ""}>
@@ -2282,6 +2461,8 @@ export default function OrderInfo() {
                 ) : (
                   <select
                     id="Unit_Price"
+                    value={orderData?.Unit_Price || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ff99cc] w-full"
                   >
                     <option value="1">1</option>
@@ -2327,7 +2508,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Od_No_of_Pd_Split"
-                    value=""
+                    value={orderData?.Od_No_of_Pd_Split || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-[#ffff00] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -2349,6 +2530,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Od_Ctl_Person_CD"
+                    value={orderData.Od_Ctl_Person_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value={orderData.Od_Ctl_Person_CD || ""}>
@@ -2362,6 +2545,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Od_Ctl_Person_CD"
+                    value={orderData?.Od_Ctl_Person_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value="1">1</option>
@@ -2388,6 +2573,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Od_Reg_Person_CD"
+                    value={orderData.Od_Reg_Person_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value={orderData.Od_Reg_Person_CD || ""}>
@@ -2401,6 +2588,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Od_Reg_Person_CD"
+                    value={orderData?.Od_Reg_Person_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value="1">1</option>
@@ -2427,6 +2616,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Od_Upd_Person_CD"
+                    value={orderData.Od_Upd_Person_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value={orderData.Od_Upd_Person_CD || ""}>
@@ -2440,6 +2631,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Od_Upd_Person_CD"
+                    value={orderData?.Od_Upd_Person_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value="1">1</option>
@@ -2466,6 +2659,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Specific_CD"
+                    value={orderData.Specific_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value={orderData.Specific_CD || ""}>
@@ -2479,6 +2674,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Specific_CD"
+                    value={orderData?.Specific_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value="1">1</option>
@@ -2505,6 +2702,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Od_Progress_CD"
+                    value={orderData.Od_Progress_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value={orderData.Od_Progress_CD || ""}>
@@ -2518,6 +2717,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Od_Progress_CD"
+                    value={orderData?.Od_Progress_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value="1">1</option>
@@ -2544,6 +2745,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Delivery_CD"
+                    value={orderData.Delivery_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value={orderData.Delivery_CD || ""}>
@@ -2557,6 +2760,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Delivery_CD"
+                    value={orderData?.Delivery_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value="1">1</option>
@@ -2583,6 +2788,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Schedule_CD"
+                    value={orderData.Schedule_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value={orderData.Schedule_CD || ""}>
@@ -2596,6 +2803,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Schedule_CD"
+                    value={orderData?.Schedule_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value="1">1</option>
@@ -2620,6 +2829,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Target_CD"
+                    value={orderData.Target_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value={orderData.Target_CD || ""}>
@@ -2633,6 +2844,8 @@ export default function OrderInfo() {
                   <select
                     disabled
                     id="Target_CD"
+                    value={orderData?.Target_CD || ""}
+                    onChange={handleInputChange}
                     className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full"
                   >
                     <option value="1">1</option>
@@ -2668,8 +2881,8 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Pd_Target_Qty"
-                    value={pdTargetQty}
-                    onChange={(e) => setPdTargetQty(e.target.value)}
+                    value={orderData?.Pd_Target_Qty || ""}
+                    onChange={(event) => handleInputChange(event)}
                     type="text"
                     className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                   />
@@ -2694,7 +2907,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Pd_Complete_Qty"
-                    value=""
+                    value={orderData?.Pd_Complete_Qty || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -2720,7 +2933,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="I_Complete_Qty"
-                    value=""
+                    value={orderData?.I_Complete_Qty || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -2746,7 +2959,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Shipment_Qty"
-                    value=""
+                    value={orderData?.Shipment_Qty || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -2772,7 +2985,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Pd_Split_Qty"
-                    value=""
+                    value={orderData?.Pd_Split_Qty || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -2798,7 +3011,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="Pd_Calc_Qty"
-                    value=""
+                    value={orderData?.Pd_Calc_Qty || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -2822,7 +3035,7 @@ export default function OrderInfo() {
                   <input
                     disabled
                     id="NG_Qty"
-                    value=""
+                    value={orderData?.NG_Qty || ""}
                     onChange={handleInputChange}
                     type="text"
                     className="bg-white border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -2932,7 +3145,7 @@ const searchPermission = (status) => {
 };
 
 const editPermission = (status) => {
-  // จัดการสิทธิ์การเข้าถึงของแต่ละฟิลด์โดยตรง
+ 
   document.getElementById("Order_No").disabled = !status;
   document.getElementById("Product_Grp_CD").disabled = !status;
   document.getElementById("Request_Delivery").disabled = !status;
@@ -2975,7 +3188,6 @@ const editPermission = (status) => {
   document.getElementById("H_Treatment5").disabled = !status;
   document.getElementById("Tolerance").disabled = !status;
   document.getElementById("Coating_CD").disabled = !status;
-  document.getElementById("Coating_Name").disabled = !status;
   document.getElementById("Coating").disabled = !status;
   document.getElementById("Quote_No").disabled = !status;
   document.getElementById("Quote_CD").disabled = !status;
@@ -3012,12 +3224,6 @@ const editPermission = (status) => {
 };
 
 const toggleButtons = (f3, f9, f11, f12) => {
-  console.log("Button F3:", f3);
-  console.log("Button F9:", f9);
-  console.log("Button F11:", f11);
-  console.log("Button F12:", f12);
-
-  // ปิดหรือเปิดการใช้งานปุ่มตามค่าที่ส่งมา
   document.getElementById("newAddButton").disabled = !f3;
   document.getElementById("saveButton").disabled = !f9;
   document.getElementById("nextInputButton").disabled = !f11;
