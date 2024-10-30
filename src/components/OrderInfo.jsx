@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useOrder } from "../hooks/use-order";
 import { FaArrowDownLong, FaArrowRightLong } from "react-icons/fa6";
 import Swal from "sweetalert2";
 
 export default function OrderInfo() {
   const navigate = useNavigate();
-  const [searchOrderNo, setSearchOrderNo] = useState("");
+  const location = useLocation(); 
+  const { searchOrderNo: initialSearchOrderNo = "" } = location.state || {}; 
+  const [searchOrderNo, setSearchOrderNo] = useState(initialSearchOrderNo);
   const [OrderNo, setOrderNo] = useState("");
   const [autoYearChange, setAutoYearChange] = useState(false);
   const [customerDraw, setCustomerDraw] = useState("");
@@ -87,16 +89,24 @@ export default function OrderInfo() {
     }
   };
 
-  const handleF4Click = () => {
+  const handleF4Click = async () => {
     try {
-      // ส่งค่า Search_Order_No ไปที่หน้า /plan-info
-      navigate("/purchase-info", { state: { searchOrderNo: searchOrderNo } });
+      const orderExists = await searchOrderData(searchOrderNo);
+      if (orderExists) {
+      navigate("/purchase-info", { state: { searchOrderNo } });
+      } else {
+        await Swal.fire({
+          title: "ข้อมูลไม่ถูกต้อง",
+          text: "ไม่มีพบหมายเลข order",
+          icon: "warning",
+          confirmButtonText: "ตกลง",
+        });
+      }
     } catch (error) {
-      // จัดการข้อผิดพลาด
+  
       alert("Error occurs when F4_Click\nPlease contact system administrator.");
     }
   };
-
   const handleF5Click = () => {
     try {
       // ส่งค่า Search_Order_No ไปที่หน้า /plan-info
