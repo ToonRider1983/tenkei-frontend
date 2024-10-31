@@ -8,7 +8,7 @@ export default function PurchaseInfo() {
   const location = useLocation(); 
   const [searchOrderNo, setSearchOrderNo] = useState(location.state?.searchOrderNo || "");
   const {orderData,searchOrderData,setOrderData,} = useOrder();
-  const {purchaseData,setPurchaseData,createPurchase,} = usePurchase();
+  const {purchaseData,setPurchaseData,createPurchase,searchPurchaseData} = usePurchase();
   const navigate = useNavigate();
 
   const handleInputChange = (event) => {
@@ -34,17 +34,33 @@ const handlePurchaseInputChange = (event) => {
       [id]: type === "checkbox" ? checked : value === "" ? null : value,
   }));
 
+
   
 };
 
+const handnewOrderNo = (newOrder_No) => {
+  handlePurchaseInputChange({
+    target: { id: "Order_No", value: newOrder_No },
+  });
+};
+
+const handleSearch_Order_NoChange = async (newOrder_No) => {
+
+  handnewOrderNo(searchOrderNo); 
+  
+};
+
+useEffect(() => {
+  if (searchOrderNo) {
+    handleSearch_Order_NoChange();
+  }
+}, [searchOrderNo]);
 
 
 const handleF3Click = () => {
   try {
     editPermission(true);
-    // คุณสามารถเพิ่มโค้ดที่ต้องการทำเมื่อกดปุ่ม F3 ที่นี่
   } catch (error) {
-    // จัดการข้อผิดพลาด
     Swal.fire({
       title: "เกิดข้อผิดพลาด",
       text: "กรุณาลองอีกครั้ง",
@@ -71,6 +87,68 @@ const handleF4Click = async () => {
   } catch (error) {
 
     alert("Error occurs when F4_Click\nPlease contact system administrator.");
+  }
+};
+
+const handleF9Click = async () => {
+  try {
+ 
+     const orderExists = await searchOrderData(searchOrderNo);
+
+     if (orderExists) {
+    
+      const purchaseExists = await searchPurchaseData(purchaseData.Order_No);
+      if (purchaseExists) {
+    
+       } else {
+
+        const result = await Swal.fire({
+          title: "ต้องการบันทึกข้อมูลหรือไม่",
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonText: "ใช่",
+          cancelButtonText: "ไม่ใช่",
+        });
+    
+        if (result.isConfirmed) {
+    
+    
+          
+          const now = new Date();
+          const formattedDate = now.toISOString(); 
+    
+    
+          document.getElementById("Pc_Reg_Date").value = formattedDate;
+          purchaseData.Pc_Reg_Date = formattedDate;
+          document.getElementById("Pc_Progress_CD").value = 1;
+          purchaseData.Pc_Progress_CD = 1;
+          purchaseData.OdPcLn_No= purchaseData.Order_No+purchaseData.Procure_No;
+          await createPurchase();
+    
+        
+        }
+
+
+
+      }
+
+    }   else { 
+
+      await Swal.fire({
+        title: "ข้อมูลไม่ถูกต้อง",
+        text: "(Order) ไม่พบ",
+        icon: "warning",
+        confirmButtonText: "ตกลง",
+      });
+    } 
+  } catch (error) {
+    console.error("Error in handleF9Click:", error);
+    Swal.fire({
+      title: "เกิดข้อผิดพลาด",
+      text: "กรุณาติดต่อผู้ดูแลระบบ",
+      icon: "error",
+      confirmButtonText: "ตกลง",
+    });
   }
 };
 
@@ -761,6 +839,9 @@ const editPermission = (status) => {
                     <div className="w-4/5">
                       <input
                         disabled
+                        id="OdPcLn_No"
+                        value={purchaseData?.OdPcLn_No || ""}
+                        onChange={handlePurchaseInputChange}
                         type="text"
                         className="bg-[#cc99ff] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                       />
@@ -773,7 +854,14 @@ const editPermission = (status) => {
                     <div className="w-3/5">
                       <input
                         disabled
-                        type="text"
+                        id="Pc_Reg_Date"
+                        value={
+                          purchaseData?.Pc_Reg_Date
+                            ? purchaseData.Pc_Reg_Date.substring(0, 10)
+                            : ""
+                        }
+                        onChange={(event) => handlePurchaseInputChange(event)}
+                        type="date"
                         className="bg-[#cc99ff] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                       />
                     </div>
@@ -785,7 +873,14 @@ const editPermission = (status) => {
                     <div className="w-3/5">
                       <input
                         disabled
-                        type="text"
+                        id="Pc_Upd_Date"
+                        value={
+                          purchaseData?.Pc_Upd_Date
+                            ? purchaseData.Pc_Upd_Date.substring(0, 10)
+                            : ""
+                        }
+                        onChange={(event) => handlePurchaseInputChange(event)}
+                        type="date"
                         className="bg-[#cc99ff] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                       />
                     </div>
@@ -796,7 +891,7 @@ const editPermission = (status) => {
                     PO_Progress
                   </label>
                   <div className="w-2/6">
-                    <select disabled id="Pc_Progress_CD" className="border-gray-500 border-solid border-2 rounded-md bg-white w-full">
+                    <select disabled id="Pc_Progress_CD" value={purchaseData?.Pc_Progress_CD || ""} onChange={handlePurchaseInputChange}  className="border-gray-500 border-solid border-2 rounded-md bg-white w-full">
                       <option value="1">1</option>
                       <option value="2">2</option>
                       <option value="3">3</option>
@@ -833,6 +928,8 @@ const editPermission = (status) => {
                       <input
                         disabled
                         id="Procure_No"
+                        value={purchaseData?.Procure_No || ""}
+                        onChange={handlePurchaseInputChange}
                         type="text"
                         className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                       />
@@ -846,6 +943,8 @@ const editPermission = (status) => {
                       <input
                         disabled
                         id="Pc_Line_No"
+                        value={purchaseData?.Pc_Line_No || ""}
+                        onChange={handlePurchaseInputChange}
                         type="text"
                         className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                       />
@@ -856,7 +955,7 @@ const editPermission = (status) => {
                       Vendor_CAT
                     </label>
                     <div className="flex items-center gap-2 w-3/5">
-                      <select disabled id="Vendor_CAT" className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full">
+                      <select disabled id="Vendor_CAT" value={purchaseData?.Vendor_CAT || ""}  onChange={handlePurchaseInputChange} className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full">
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -873,7 +972,7 @@ const editPermission = (status) => {
                 <div className="flex gap-2 items-center">
                   <label className="font-medium text-xs w-2/6">Vendor</label>
                   <div className="flex gap-2 items-center w-4/6">
-                    <select disabled id="Vendor_CD" className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full">
+                    <select disabled id="Vendor_CD" value={purchaseData?.Vendor_CD || ""}  onChange={handlePurchaseInputChange} className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full">
                       <option value="1">1</option>
                       <option value="2">2</option>
                       <option value="3">3</option>
@@ -891,7 +990,7 @@ const editPermission = (status) => {
                 <div className="flex gap-2 items-center">
                   <label className="font-medium text-xs w-2/5">PO_Person</label>
                   <div className="w-3/5 flex gap-2">
-                    <select disabled id="Pc_Person_CD" className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full">
+                    <select disabled id="Pc_Person_CD" value={purchaseData?.Pc_Person_CD || ""}  onChange={handlePurchaseInputChange} className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full">
                       <option value="1">1</option>
                       <option value="2">2</option>
                       <option value="3">3</option>
@@ -924,6 +1023,8 @@ const editPermission = (status) => {
                       <input
                         disabled
                         id="Pc_Material"
+                        value={purchaseData?.Pc_Material || ""}
+                        onChange={handlePurchaseInputChange}
                         type="text"
                         className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                       />
@@ -941,10 +1042,12 @@ const editPermission = (status) => {
                       <input
                         disabled
                         id="Pc_Qty"
+                        value={purchaseData?.Pc_Qty || ""}
+                        onChange={handlePurchaseInputChange}
                         type="text"
                         className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-1/2"
                       />
-                      <select disabled id="Pc_Unit_CD" className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-1/2">
+                      <select disabled id="Pc_Unit_CD"  value={purchaseData?.Pc_Unit_CD || ""} onChange={handlePurchaseInputChange} className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-1/2">
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -967,6 +1070,8 @@ const editPermission = (status) => {
                   <div className="w-3/5">
                     <input
                       disabled
+                      value={purchaseData?.Pc_Date || ""} 
+                      onChange={handlePurchaseInputChange}
                       id="Pc_Date"
                       type="text"
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
@@ -979,10 +1084,12 @@ const editPermission = (status) => {
                     <input
                       disabled
                       id="Pc_Req_Delivery"
+                      value={purchaseData?.Pc_Req_Delivery || ""} 
+                      onChange={handlePurchaseInputChange}
                       type="text"
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
-                    <select disabled id="Pc_Req_Delivery_CD" className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-1/2">
+                    <select disabled id="Pc_Req_Delivery_CD" value={purchaseData?.Pc_Req_Delivery_CD || ""}  onChange={handlePurchaseInputChange} className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-1/2">
                       <option value="1">1</option>
                       <option value="2">2</option>
                       <option value="3">3</option>
@@ -999,10 +1106,12 @@ const editPermission = (status) => {
                     <input
                       disabled
                       id="Pc_Ans_Delivery"
-                      type="text"
+                      value={purchaseData?.Pc_Ans_Delivery || ""} 
+                      onChange={handlePurchaseInputChange}
+                      type="date"
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
-                    <select disabled id="Pc_Ans_Delivery_CD" className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-1/2">
+                    <select disabled id="Pc_Ans_Delivery_CD" value={purchaseData?.Pc_Ans_Delivery_CD || ""} onChange={handlePurchaseInputChange}  className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-1/2">
                       <option value="1">1</option>
                       <option value="2">2</option>
                       <option value="3">3</option>
@@ -1021,7 +1130,9 @@ const editPermission = (status) => {
                     <input
                       disabled
                       id="Pc_Arrival_Date"
-                      type="text"
+                      value={purchaseData?.Pc_Arrival_Date || ""} 
+                      onChange={handlePurchaseInputChange}
+                      type="date"
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
                   </div>
@@ -1030,6 +1141,8 @@ const editPermission = (status) => {
                     <input
                       disabled
                       id="Pc_Arrival_Qty"
+                      value={purchaseData?.Pc_Arrival_Qty || ""} 
+                      onChange={handlePurchaseInputChange}
                       type="text"
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
@@ -1039,6 +1152,8 @@ const editPermission = (status) => {
                     <input
                       disabled
                       id="Re_Qty"
+                      value={purchaseData?.Re_Qty || ""} 
+                      onChange={handlePurchaseInputChange}
                       type="text"
                       className="bg-[#cc99ff] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
@@ -1049,7 +1164,7 @@ const editPermission = (status) => {
                 <div className="flex gap-2 items-center">
                   <label className="font-medium text-xs w-2/5">Price_CD</label>
                   <div className="w-3/5 flex items-center gap-2">
-                    <select disabled id="Price_CD" className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-1/2">
+                    <select disabled id="Price_CD" value={purchaseData?.Price_CD || ""} onChange={handlePurchaseInputChange}  className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-1/2">
                       <option value="1">1</option>
                       <option value="2">2</option>
                       <option value="3">3</option>
@@ -1068,6 +1183,8 @@ const editPermission = (status) => {
                     <input
                       disabled
                       id="Unit_Price"
+                      value={purchaseData?.Unit_Price || ""} 
+                      onChange={handlePurchaseInputChange}
                       type="text"
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
@@ -1077,7 +1194,9 @@ const editPermission = (status) => {
                     <input
                       disabled
                       id="Pc_Cancel_Date"
-                      type="text"
+                      value={purchaseData?.Pc_Cancel_Date || ""} 
+                      onChange={handlePurchaseInputChange}
+                      type="date"
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
                   </div>
@@ -1088,6 +1207,8 @@ const editPermission = (status) => {
                     <input
                       disabled
                       id="Pc_Remark"
+                      value={purchaseData?.Pc_Remark || ""} 
+                      onChange={handlePurchaseInputChange}
                       type="text"
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
@@ -1311,7 +1432,7 @@ const editPermission = (status) => {
                 </button>
               </div>
               <div className="grid grid-cols-4 gap-2">
-                <button id="F9" className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white">
+                <button id="F9" onClick={handleF9Click} className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white">
                   Save <br />
                   登録 (F9)
                 </button>
