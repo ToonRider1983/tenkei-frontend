@@ -8,35 +8,57 @@ export default function PurchaseInfo() {
   const location = useLocation(); 
   const [searchOrderNo, setSearchOrderNo] = useState(location.state?.searchOrderNo || "");
   const {orderData,searchOrderData,setOrderData,} = useOrder();
-  const {purchaseData,setPurchaseData,createPurchase,searchPurchaseData} = usePurchase();
+  const {purchaseData,setPurchaseData,createPurchase,searchPurchaseData,searchProcureData,setSelectedPurchaseNo,selectedPurchaseNo,editProcure,deleteProcure} = usePurchase();
   const navigate = useNavigate();
 
-  const handleInputChange = (event) => {
+  const handleInputChange = (event, isPurchase = false) => {
     const { id, value, type, checked } = event.target;
-    setOrderData((prevOrderData) => ({
-        ...prevOrderData,
-        [id]: type === "checkbox" ? checked : value === "" ? null : value,
-    }));
-    
-    if (id === "Search_Order_No") {
-      setSearchOrderNo(value);
-      if (value) {
-        searchOrderData(value); 
-      }
+
+    // เลือกว่าจะอัปเดตข้อมูลใน orderData หรือ purchaseData ขึ้นอยู่กับค่า isPurchase
+    if (isPurchase) {
+        setPurchaseData((prevPurchaseData) => ({
+            ...prevPurchaseData,
+            [id]: type === "checkbox" ? checked : value === "" ? null : value,
+        }));
+    } else {
+        setOrderData((prevOrderData) => ({
+            ...prevOrderData,
+            [id]: type === "checkbox" ? checked : value === "" ? null : value,
+        }));
     }
 
-};
+    // ตรวจสอบและค้นหาข้อมูลทั้ง order และ purchase
+    if (id === "Search_Order_No") {
+        setSearchOrderNo(value);
+        if (value) {
+            searchOrderData(value); 
+            searchPurchaseData(value); 
+           
+        }
+    } 
 
-const handlePurchaseInputChange = (event) => {
+};
+const handlePurchaseInputChange = async (event) => {
   const { id, value, type, checked } = event.target;
+  
+  // อัปเดต purchaseData ตามค่าที่ผู้ใช้กรอก
   setPurchaseData((prevPurchaseData) => ({
       ...prevPurchaseData,
       [id]: type === "checkbox" ? checked : value === "" ? null : value,
   }));
 
 
-  
+  if (id === "Search_PcLn_No") {
+   
+      const OdPcLnNo = value; 
+      await setSelectedPurchaseNo(selectedPurchaseNo);
+      await searchProcureData(OdPcLnNo); 
+  }
 };
+
+
+
+
 
 const handnewOrderNo = (newOrder_No) => {
   handlePurchaseInputChange({
@@ -46,16 +68,30 @@ const handnewOrderNo = (newOrder_No) => {
 
 const handleSearch_Order_NoChange = async (newOrder_No) => {
 
-  handnewOrderNo(searchOrderNo); 
+  if (searchOrderNo) {
+    await searchOrderData(searchOrderNo);
+    await searchPurchaseData(searchOrderNo);
+  }
   
 };
 
 useEffect(() => {
-  if (searchOrderNo) {
-    handleSearch_Order_NoChange();
-  }
+  handleSearch_Order_NoChange();
 }, [searchOrderNo]);
 
+const handleF2Click = () => {
+  try {
+    editPermission(true);
+  } catch (error) {
+    Swal.fire({
+      title: "เกิดข้อผิดพลาด",
+      text: "กรุณาลองอีกครั้ง",
+      icon: "error",
+      confirmButtonText: "ตกลง",
+    });
+    console.error("Error in F3_Click:", error); 
+  }
+};
 
 const handleF3Click = () => {
   try {
@@ -97,8 +133,28 @@ const handleF9Click = async () => {
 
      if (orderExists) {
     
-      const purchaseExists = await searchPurchaseData(purchaseData.Order_No);
+      const purchaseExists = await searchPurchaseData(purchaseData.OdPcLn_No);
       if (purchaseExists) {
+
+        const result = await Swal.fire({
+          title: "ต้องการบันทึกข้อมูลหรือไม่",
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonText: "ใช่",
+          cancelButtonText: "ไม่ใช่",
+        });
+    
+        if (result.isConfirmed) {
+          const now = new Date();
+          const formattedDate = now.toISOString(); 
+    
+    
+          document.getElementById("Pc_Arrival_Date").value = formattedDate;
+          purchaseData.Pc_Arrival_Date = formattedDate;
+         
+          await editProcure();
+
+        }
     
        } else {
 
@@ -128,8 +184,6 @@ const handleF9Click = async () => {
         
         }
 
-
-
       }
 
     }   else { 
@@ -149,6 +203,40 @@ const handleF9Click = async () => {
       icon: "error",
       confirmButtonText: "ตกลง",
     });
+  }
+};
+
+const handleF10Click = async () => {
+  try {
+    // แสดงกล่องยืนยันการลบข้อมูล
+    const result = await Swal.fire({
+      title: "ยืนยันการลบ?",
+      text: "คุณต้องการลบข้อมูลนี้หรือไม่?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "ใช่, ลบเลย!",
+      cancelButtonText: "ยกเลิก",
+    });
+
+    // ตรวจสอบว่าผู้ใช้เลือก "ยืนยัน" หรือไม่
+    if (result.isConfirmed) {
+      const response = await deleteProcure(purchaseData.OdPcLn_No); // เรียกใช้ฟังก์ชันลบคำสั่ง
+      console.log("Delete result:", response);
+
+      // แสดงข้อความว่าลบเรียบร้อยแล้ว
+      Swal.fire(
+        "ลบเรียบร้อย!",
+        "ข้อมูลของคุณได้ถูกลบเรียบร้อยแล้ว.",
+        "success"
+      );
+    }
+  } catch (error) {
+    // จัดการข้อผิดพลาด
+    alert(
+      "Error occurs when F10_Click\nPlease contact system administrator."
+    );
   }
 };
 
@@ -192,35 +280,36 @@ const editPermission = (status) => {
             <div className="flex gap-2 items-center">
               <label className="font-medium text-xs">Search_Order_No</label>
               <div className="w-3/5">
-              {searchOrderNo ? (
-
-                <input
-                  id="Search_Order_No"
-                  type="text"
-                  value={searchOrderNo}
-                  onChange={(e) => setSearchOrderNo(e.target.value)}
-              
-                  className="bg-[#cbfefe] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                />
-              ) : (
-                <input
-                  id="Search_Order_No"
-                  value={searchOrderNo}
-                  onChange={handleInputChange}
-                  type="text"
-                  className="bg-[#cbfefe] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
-                />
-              )}
+              <input
+              id="Search_Order_No"
+              type="text"
+              value={searchOrderNo || ""}
+              onChange={handleInputChange}
+              className="bg-[#cbfefe] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
+              />
               </div>
             </div>
             <div className="flex gap-2 items-center">
               <label className="font-medium text-xs">Search_Poln_No</label>
               <div className="w-3/5">
-                <select  id="Search_PcLn_No" className="border-gray-500 border-solid border-2 rounded-md bg-[#cbfefe] w-full">
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                </select>
+              <select
+              id="Search_PcLn_No"
+              value={selectedPurchaseNo || ""} 
+              onChange={(e) => handlePurchaseInputChange(e)}
+              className="border-gray-500 border-solid border-2 rounded-md bg-[#cbfefe] w-full"
+          >
+            <option value="">เลือกข้อมูล</option>
+          {Array.isArray(selectedPurchaseNo) && selectedPurchaseNo.length > 0 ? (
+         selectedPurchaseNo.map((item, index) => (
+            <option key={index} value={item.OdPcLn_No}>
+                {item.OdPcLn_No}
+            </option>
+             ))
+          ) : (
+        <option value="">ไม่มีข้อมูล</option>
+        
+          )}
+          </select>
               </div>
               <div className="w-3/5">
                 <input
@@ -892,6 +981,7 @@ const editPermission = (status) => {
                   </label>
                   <div className="w-2/6">
                     <select disabled id="Pc_Progress_CD" value={purchaseData?.Pc_Progress_CD || ""} onChange={handlePurchaseInputChange}  className="border-gray-500 border-solid border-2 rounded-md bg-white w-full">
+                    <option value={purchaseData?.Pc_Progress_CD || ""}>{purchaseData?.Pc_Progress_CD || ""}</option>
                       <option value="1">1</option>
                       <option value="2">2</option>
                       <option value="3">3</option>
@@ -956,6 +1046,7 @@ const editPermission = (status) => {
                     </label>
                     <div className="flex items-center gap-2 w-3/5">
                       <select disabled id="Vendor_CAT" value={purchaseData?.Vendor_CAT || ""}  onChange={handlePurchaseInputChange} className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full">
+                        <option value={purchaseData?.Vendor_CAT || ""}>{purchaseData?.Vendor_CAT || ""}</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -973,6 +1064,7 @@ const editPermission = (status) => {
                   <label className="font-medium text-xs w-2/6">Vendor</label>
                   <div className="flex gap-2 items-center w-4/6">
                     <select disabled id="Vendor_CD" value={purchaseData?.Vendor_CD || ""}  onChange={handlePurchaseInputChange} className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full">
+                      <option value={purchaseData?.Vendor_CD || ""}>{purchaseData?.Vendor_CD || ""}</option>
                       <option value="1">1</option>
                       <option value="2">2</option>
                       <option value="3">3</option>
@@ -991,7 +1083,7 @@ const editPermission = (status) => {
                   <label className="font-medium text-xs w-2/5">PO_Person</label>
                   <div className="w-3/5 flex gap-2">
                     <select disabled id="Pc_Person_CD" value={purchaseData?.Pc_Person_CD || ""}  onChange={handlePurchaseInputChange} className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-full">
-                      <option value="1">1</option>
+                      <option value={purchaseData?.Pc_Person_CD || ""}>{purchaseData?.Pc_Person_CD || ""}</option>
                       <option value="2">2</option>
                       <option value="3">3</option>
                     </select>
@@ -1012,6 +1104,8 @@ const editPermission = (status) => {
                       <input
                         disabled
                         id="Pc_Name"
+                        value={purchaseData?.Pc_Name || ""}  
+                        onChange={handlePurchaseInputChange}
                         type="text"
                         className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                       />
@@ -1048,6 +1142,7 @@ const editPermission = (status) => {
                         className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-1/2"
                       />
                       <select disabled id="Pc_Unit_CD"  value={purchaseData?.Pc_Unit_CD || ""} onChange={handlePurchaseInputChange} className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-1/2">
+                        <option value={purchaseData?.Pc_Unit_CD || ""}>{purchaseData?.Pc_Unit_CD || ""}</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -1090,6 +1185,7 @@ const editPermission = (status) => {
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
                     <select disabled id="Pc_Req_Delivery_CD" value={purchaseData?.Pc_Req_Delivery_CD || ""}  onChange={handlePurchaseInputChange} className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-1/2">
+                      <option value={purchaseData?.Pc_Req_Delivery_CD || ""}>{purchaseData?.Pc_Req_Delivery_CD || ""}</option>
                       <option value="1">1</option>
                       <option value="2">2</option>
                       <option value="3">3</option>
@@ -1112,7 +1208,7 @@ const editPermission = (status) => {
                       className="bg-[#ffff99] border-solid border-2 border-gray-500 rounded-md px-1 w-full"
                     />
                     <select disabled id="Pc_Ans_Delivery_CD" value={purchaseData?.Pc_Ans_Delivery_CD || ""} onChange={handlePurchaseInputChange}  className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-1/2">
-                      <option value="1">1</option>
+                      <option value={purchaseData?.Pc_Ans_Delivery_CD || ""}>{purchaseData?.Pc_Ans_Delivery_CD || ""}</option>
                       <option value="2">2</option>
                       <option value="3">3</option>
                     </select>
@@ -1165,7 +1261,7 @@ const editPermission = (status) => {
                   <label className="font-medium text-xs w-2/5">Price_CD</label>
                   <div className="w-3/5 flex items-center gap-2">
                     <select disabled id="Price_CD" value={purchaseData?.Price_CD || ""} onChange={handlePurchaseInputChange}  className="border-gray-500 border-solid border-2 rounded-md bg-[#ffff99] w-1/2">
-                      <option value="1">1</option>
+                      <option value={purchaseData?.Price_CD || ""}>{purchaseData?.Price_CD || ""}</option>
                       <option value="2">2</option>
                       <option value="3">3</option>
                     </select>
@@ -1401,7 +1497,7 @@ const editPermission = (status) => {
                   Search <br />
                   検索 (F1)
                 </button>
-                <button id="F2" className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white">
+                <button id="F2" onClick={handleF2Click} className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white">
                   Edit <br />
                   編集 (F2)
                 </button>
@@ -1436,7 +1532,7 @@ const editPermission = (status) => {
                   Save <br />
                   登録 (F9)
                 </button>
-                <button id="F10" className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white">
+                <button id="F10" onClick={handleF10Click} className="bg-blue-500 p-3 rounded-lg hover:bg-blue-700 font-medium text-white">
                   Delete <br />
                   削除 (F10)
                 </button>
